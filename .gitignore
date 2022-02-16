@@ -37,3 +37,12 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# CR
+# Ignore MD outputs
+*.html
+*.docx
+DATA derived/
+*.Rproj
+RESULTS*/
+outputs.*/

@@ -1,0 +1,119 @@
+---
+title: "Demographics for ICARS/SARA/mFARS Correlation Analysis"
+author: "Christian Rummey"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+editor_options:
+  chunk_output_type: inline
+  markdown:
+    wrap: 100
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8.5, fig.height=5.5, fig.align='center', echo=F, warning=F, message=F, cache=F)
+```
+
+```{r, echo = F, message = F}
+
+dt. <- readRDS('DATA derived/long.data.rds')
+pars <- levels(dt.$paramcd)
+
+dt. %<>% 
+  mutate( paramcd = factor(paramcd, pars)) %>% 
+  ungroup 
+
+# calculate FU time
+
+dt.fu <- dt. %>%
+  mutate ( amb.n = as.numeric((factor(amb)))) %>% 
+  select ( study, sjid, avisitn, age, amb, amb.n ) %>% 
+  unique %>% mutate(paramcd = 'dummy') %>% 
+  .duplicate_phase_visits() %>% 
+  group_by(sjid) %>% 
+  mutate ( fu       = max(age)-min(age) ) %>% 
+  group_by(sjid, phase.n) %>% 
+  mutate ( fu.phase = max(age)-min(age) ) %>%
+  filter ( dupline != T) %>% 
+  group_by(sjid) %>% 
+  mutate ( age = min(age), age.last = max(age) ) %>%
+  mutate ( status = min(amb.n), status.last = max(amb.n)) %>% 
+  select ( study, sjid, age, age.last, amb, fu, fu.phase, status, status.last) %>% 
+  unique %>% 
+  spread ( amb, fu.phase) %>% 
+  rename ( fu.amb = ambulatory, fu.namb = `non-amb.`)
+
+dt <- dt.fu %>% 
+  left_join(.dd.FA('demo') %>% select(sjid, site, sex, symp, diag, sev.o, gaa1, gaa2, pm, pm.grp)) %>% 
+  mutate( since.d = age-diag)
+
+dt %<>% 
+  mutate(no.fu = ifelse(fu==0, 1, 0)) %>% 
+  mutate(pm = ifelse(pm == 0, 0, 1)) %>% 
+  arrange(status)
+
+```
+
+# Demographics
+
+```{r}
+
+# Demo Table by type----------------------------------------------------------------
+
+var_label(dt) <- list(sex       = 'Sex',
+                      age       = 'Age (BL)', 
+                      symp      = 'Age of Onset', 
+                      gaa1      = 'GAA1',
+                      gaa2      = 'GAA2', 
+                      pm        = 'PMs (%)',
+                      sev.o     = 'Severity Group', #-------------------
+                      since.d   = 'Time since Diagnosis',
+                      status    = 'Amb at Enrol.',
+                      status.last  = 'Amb at Last Visit',
+                      fu        = 'FU (years)',
+                      no.fu     = 'No Follow-up (%)',
+                      fu.amb    = 'FU (amb., y)',
+                      fu.namb   = 'FU (non-amb., y)',
+                      age.last  = 'Age (FU)'
+)
+
+tb <- jstable::CreateTableOne2(
+  vars       = c( 'sex','age','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  factorVars = c( 'pm', 'no.fu','status','status.last' ),
+  nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
+  strata     = c( 'sev.o' ),
+  data       = dt 
+  # addOverall = F
+  # test = F
+)    %>% 
+  .ct
+
+tb <- tableone::CreateTableOne(
+  vars       = c( 'sex','age','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  factorVars = c( 'pm', 'no.fu','status','status.last' ),
+  strata     = c( 'sev.o' ),
+  # nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
+  data       = dt, 
+  addOverall = T,
+  test = F
+  )    
+
+tb %>% print(varLabels = T, 
+             nonnormal  = c( 'age', 'symp', 'gaa2','age','age.last','sinced','fu' , 'pm'),
+             contDigits = 1, 
+             catDigits = 0,
+             missing = T,
+             explain = F, 
+             dropEqual= F, 
+             add.rownames = T,
+             format = 'p',
+             showAllLevels = TRUE
+) %>% tableone::kableone()
+
+```
