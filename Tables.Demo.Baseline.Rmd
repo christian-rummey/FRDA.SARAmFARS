@@ -1,35 +1,40 @@
----
-title: "Demographics for ICARS/SARA/mFARS Correlation Analysis"
-author: "Christian Rummey"
-date: "`r Sys.Date()`"
-output:
-  word_document:
-    toc: yes
-    number_sections: yes
-  html_document:
-    toc: yes
-    df_print: paged
-    number_sections: yes
-editor_options:
-  chunk_output_type: inline
-  markdown:
-    wrap: 100
----
+#' ---
+#' title: "Demographics & Structure"
+#' author: "Christian Rummey"
+#' date: "`r format(Sys.time(), '%d %B, %Y, %H:%M')`"
+#' output:
+#'    word_document:
+#'      number_sections: yes
+#' ---
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=8.5, fig.height=5.5, fig.align='center', echo=F, warning=F, message=F, cache=F)
-```
+#+ setup, include=FALSE
+knitr::opts_chunk$set(cache    = F)
+knitr::opts_chunk$set(echo     = F)
+knitr::opts_chunk$set(include  = T)
+knitr::opts_chunk$set(warning  = F)
+knitr::opts_chunk$set(message  = F)
+knitr::opts_chunk$set(fig.width=6, fig.height=4) 
 
-```{r, echo = F, message = F}
+rm(list=ls())
+
+require(tableone)
+require(labelled)
+require(jstable)
+
+# Data Baseline Table & Structure -----------------------------------------
 
 dt. <- readRDS('DATA derived/long.data.rds')
-pars <- levels(dt.$paramcd)
 
 dt. %<>% 
-  mutate( paramcd = factor(paramcd, pars)) %>% 
+  ungroup %>%
+  filter( forslope == 1) %>%
+  select( study, sjid, avisitn, age, amb, age.grp) %>% 
+  unique() %>% 
   ungroup 
 
-# calculate FU time
+#' # Demographics 
+
+# fullow-up time ----------------------------------------------------------
 
 dt.fu <- dt. %>%
   mutate ( amb.n = as.numeric((factor(amb)))) %>% 
@@ -49,24 +54,18 @@ dt.fu <- dt. %>%
   spread ( amb, fu.phase) %>% 
   rename ( fu.amb = ambulatory, fu.namb = `non-amb.`)
 
-dt <- dt.fu %>% 
+dt.fu %<>% 
   left_join(.dd.FA('demo') %>% select(sjid, site, sex, symp, diag, sev.o, gaa1, gaa2, pm, pm.grp)) %>% 
   mutate( since.d = age-diag)
 
-dt %<>% 
+dt.fu %<>% 
   mutate(no.fu = ifelse(fu==0, 1, 0)) %>% 
   mutate(pm = ifelse(pm == 0, 0, 1)) %>% 
   arrange(status)
 
-```
-
-# Demographics
-
-```{r}
-
 # Demo Table by type----------------------------------------------------------------
 
-var_label(dt) <- list(sex       = 'Sex',
+var_label(dt.fu) <- list(sex       = 'Sex',
                       age       = 'Age (BL)', 
                       symp      = 'Age of Onset', 
                       gaa1      = 'GAA1',
@@ -88,7 +87,7 @@ tb <- jstable::CreateTableOne2(
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
   strata     = c( 'sev.o' ),
-  data       = dt 
+  data       = dt.fu 
   # addOverall = F
   # test = F
 )    %>% 
@@ -98,22 +97,96 @@ tb <- tableone::CreateTableOne(
   vars       = c( 'sex','age','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   strata     = c( 'sev.o' ),
-  # nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
-  data       = dt, 
+  data       = dt.fu, 
   addOverall = T,
   test = F
   )    
 
 tb %>% print(varLabels = T, 
-             nonnormal  = c( 'age', 'symp', 'gaa2','age','age.last','sinced','fu' , 'pm'),
+             nonnormal  = c( 'age', 'symp','gaa1' ,'gaa2','age','age.last','sinced','fu','fu.amb','fu.namb' , 'pm', 'since.d'),
              contDigits = 1, 
              catDigits = 0,
-             missing = T,
+             missing = F,
              explain = F, 
              dropEqual= F, 
              add.rownames = T,
              format = 'p',
              showAllLevels = TRUE
-) %>% tableone::kableone()
+) %>% kableone()
 
-```
+
+#' # Structure
+
+#' ## Visits
+
+dt. %<>% 
+  left_join(.dd.FA('demo') %>% select(sjid, sev.o))
+
+pct <- dt. %>% 
+  group_by(age.grp) %>% 
+  mutate(N = n()) %>% 
+  group_by(age.grp, N, amb) %>% 
+  summarise(n = n(), age = median(age)) %>% 
+  mutate(pct = 100*n/N) %>% 
+  filter(amb == 'ambulatory') %>%
+  mutate(sev.o = factor('8-14y', levels(dt.$sev.o)))
+
+dt. %>% 
+  group_by(sjid) %>% 
+  filter(avisitn == min(avisitn)) %>%
+  group_by(sjid, amb) %>% 
+  mutate(split = '1 recruited') %>% 
+  bind_rows(dt. %>% mutate(split = '2 all visit')) %>% 
+  # filter(split == '1 recruited') %>%
+  filter(split == '2 all visit') %>%
+  ggplot()+geom_bar(width=1)+
+  aes(x = round(age))+
+  scale_x_continuous(
+    breaks = c( 8, 12, 16,25,40,50,60,70,80 )+.5,
+    labels = c( 8, 12, 16,25,40,50,60,70,80 ),
+  )+
+  aes(fill = sev.o)+.sfbs1+
+  facet_grid(amb~.)+
+  .theme()+
+  geom_vline(xintercept = c( 8, 12, 16, 25, 40 )+.5, linetype = 'dotted')+
+  geom_text(aes(label = round(pct,0), y = -1), data = pct, size = 3)+
+  coord_cartesian(xlim = c(5, 83))+
+  .leg_tr+
+  xlab('Age')+
+  ylab('Visit Count')
+
+# .sp()
+
+
+#' ## Subjects/Visit %
+
+dt <- dt. %>% 
+  group_by(age.grp, sev.o) %>%
+  summarise(n = n()) %>% 
+  mutate(N = sum(n)) %>% 
+  mutate(pct = round(100*n/N)) %>%
+  select(-n, -N) %>% 
+  spread(age.grp, pct, fill = '')
+
+dt <- dt. %>% 
+  group_by(sjid) %>% filter(avisitn == min(avisitn)) %>% 
+  group_by(age.grp, sev.o) %>%
+  summarise(n = n()) %>% 
+  mutate(N = sum(n)) %>% 
+  mutate(pct = round(100*n/N)) %>%
+  select(-n, -N) %>% 
+  spread(age.grp, pct, fill = '') %>% 
+  left_join(dt, by = 'sev.o')
+
+dt %>% 
+  mutate(   '<8y' = paste(   `<8y.x`, '\n(' ,   `<8y.y`, ')',sep = '')) %>% 
+  mutate( '8-11y' = paste( `8-11y.x`, '\n(' , `8-11y.y`, ')',sep = '')) %>% 
+  mutate('12-15y' = paste(`12-15y.x`, '\n(' ,`12-15y.y`, ')',sep = '')) %>% 
+  mutate('16-24y' = paste(`16-24y.x`, '\n(' ,`16-24y.y`, ')',sep = '')) %>% 
+  mutate('25-40y' = paste(`25-40y.x`, '\n(' ,`25-40y.y`, ')',sep = '')) %>% 
+  mutate(  '>40y' = paste(  `>40y.x`, '\n(' ,  `>40y.y`, ')',sep = '')) %>% 
+  select(-contains('.x'), -contains('.y')) %>% 
+  # .ct()
+  flextable
+
+
