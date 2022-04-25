@@ -17,7 +17,7 @@ editor_options:
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=9.5, fig.height=5.5, fig.align='center', echo=F, warning=F, message=F, cache=F)
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align='center', echo=F, warning=F, message=F, cache=F)
 
 library(corrr)
 ```
@@ -47,26 +47,44 @@ dt. %<>%
 
 # Summary
 
-- Ataxia scores can be reliably converted, when it is necessary to compare patients where only one scores is available (comparative assessment of disease stage)
+- Ataxia scores can be reliably converted, to comparatively assess disease stage. 
 
-- mFARS should be used as the reference score, using the following coefficients	
+- This is not valid when assessing progression, due to subtle differences in how the scores behave, and progression differs between disease phases (ambulatory vs non-ambulatory) 
+
+- mFARS is the most suitable reference score.
+
+-	Reasons: 
+
+  1) mFARS (FARS E) is assessing key stance/balance functions that is lost very early (often pre-diagnosis), or is never attained. 
+  2) Because some of these functions are maxed out in most patients, converstion to mFARS requires a large intercept (see table below). 
+  3) Balance function in mFARS is assessed in a more objective (timed) way, compared to other ataxia scales.  
+  4) These functions should also make mFARS more sensitive in early diesease stages.
+
+- Stance function overall is assessed  in the mFARS. Therefore, in the early phase (SARA<=8, ICARS<=20), mFARS (FARS E) is likely the superior tool. 
+-	At such low scores, alternative conversion factors should be used (see graphs)
+-	Appendicular function correlates well overall, between all three scores. 
+
 
 
 ```{r}
-tmp  <- dt. %>% select(sjid, age, mFARS, SARA, ICARS) %>% mutate(type = 'scale')
-tmp2 <- dt. %>% select(sjid, age, mFARS, SARA, ICARS) %>% mutate(type = 'pct') %>% 
-  mutate(mFARS = 100*mFARS/93) %>% 
-  mutate(SARA  = 100*SARA/40) %>% 
-  mutate(ICARS = 100*ICARS/93)
+tmp  <- dt. %>% select(sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate(type = 'scale')
+tmp2 <- dt. %>% select(sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate(type = 'pct') %>% 
+  mutate(mFARS = 100*mFARS /93 ) %>% 
+  mutate(SARA  = 100*SARA  /40 ) %>% 
+  mutate(ICARS = 100*ICARS /100)
 
-bind_rows(
-  tmp  %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS),
-  tmp  %>% rename(score = SARA ) %>% mutate(dep = 'SARA' ) %>% gather(indep, value, mFARS, ICARS),
-  tmp  %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA),
-  tmp2 %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS),
-  tmp2 %>% rename(score = SARA ) %>% mutate(dep = 'SARA' ) %>% gather(indep, value, mFARS, ICARS),
-  tmp2 %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA)
-) %>% 
+scores. <- bind_rows(
+  tmp  %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS, FARSn),
+  tmp  %>% rename(score = FARSn) %>% mutate(dep = 'FARSn') %>% gather(indep, value, SARA, ICARS, mFARS),
+  tmp  %>% rename(score = SARA ) %>% mutate(dep = 'SARA' ) %>% gather(indep, value, mFARS, ICARS, FARSn),
+  tmp  %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA, FARSn),
+  tmp2 %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS, FARSn),
+  tmp2 %>% rename(score = FARSn) %>% mutate(dep = 'FARSn') %>% gather(indep, value, SARA, ICARS, mFARS),
+  tmp2 %>% rename(score = SARA ) %>% mutate(dep = 'SARA' ) %>% gather(indep, value, mFARS, ICARS, FARSn),
+  tmp2 %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA, FARSn)
+) 
+
+table <- scores. %>% 
   group_by(type, dep, indep) %>% 
   nest() %>% 
   mutate ( lm.mod = map( data  , ~ lm (score ~ value, data = .))) %>% 
@@ -75,11 +93,14 @@ bind_rows(
   select ( dep, indep, term, estimate) %>% 
   spread ( term, estimate ) %>% 
   rename ( intercept = `(Intercept)`, slope = value ) %>% 
-  mutate ( dep   = factor(dep, c('mFARS', 'SARA', 'ICARS'))) %>% 
-  mutate ( indep = factor(indep, c('mFARS', 'SARA', 'ICARS'))) %>% 
+  mutate ( dep   = factor(dep, c('mFARS', 'FARSn','SARA', 'ICARS'))) %>% 
+  mutate ( indep = factor(indep, c('mFARS', 'FARSn', 'SARA', 'ICARS'))) %>% 
   arrange( type, dep, indep) %>% 
   pivot_wider(id_cols = c('dep', 'indep'), names_from = c('type'), values_from = c('intercept', 'slope') ) %>% 
-  select(dep, indep, intercept_scale, slope_scale, intercept_pct, slope_pct) %>% 
+  select(dep, indep, intercept_scale, slope_scale, intercept_pct, slope_pct) 
+
+table %>%
+  # filter(!((dep == 'SARA' | dep == 'ICARS') & indep == 'FARSn')) %>% 
   flextable() %>% 
   colformat_double(digits = 2) %>% 
   set_header_labels(values = list(dep = '', indep = 'predicted from', 
@@ -89,30 +110,50 @@ bind_rows(
                                   slope_pct   = 'slope')) %>% 
   add_header_row(values = c('','Points','%'), colwidths = c(2, 2, 2)) %>% 
   align(j = c(1:6), part = 'all', align = 'center'  ) %>% 
-  hline(i = c(2, 4))
+  hline(i = c(3, 6)) %>% 
+  set_caption("Conversion Coefficients for full Scales",
+              autonum = run_autonum(seq_id = "tab", bkm = "full"))
+
+table <- scores. %>% 
+  mutate(threshold = ifelse(indep == 'SARA', 9, ifelse(indep == 'ICARS', 23, ifelse(indep == 'mFARS', 21, ifelse(indep == 'FARSn', 24, NA))))) %>% 
+  filter(value<threshold) %>% 
+  group_by(type, dep, indep, threshold) %>% 
+  nest() %>% 
+  mutate ( lm.mod = map( data  , ~ lm (score ~ value, data = .))) %>% 
+  mutate ( coef   = map( lm.mod, ~ broom::tidy (.))) %>% 
+  unnest ( coef ) %>% 
+  select ( dep, indep, threshold, term, estimate) %>% 
+  spread ( term, estimate ) %>% 
+  rename ( intercept = `(Intercept)`, slope = value ) %>% 
+  mutate ( dep   = factor(dep, c('mFARS', 'FARSn','SARA', 'ICARS'))) %>% 
+  mutate ( indep = factor(indep, c('mFARS', 'FARSn', 'SARA', 'ICARS'))) %>% 
+  arrange( type, dep, indep) %>% 
+  pivot_wider(id_cols = c('dep', 'indep','threshold'), names_from = c('type'), values_from = c('intercept', 'slope') ) %>% 
+  select(dep, indep, threshold, intercept_scale, slope_scale, intercept_pct, slope_pct) 
+
+table %>%
+  filter(!((dep == 'SARA' | dep == 'ICARS') & indep == 'FARSn')) %>% 
+  flextable() %>% 
+  colformat_double(digits = 2) %>% 
+  set_header_labels(values = list(dep = '', indep = 'predicted from', 
+                                  intercept_scale = 'intercept',
+                                  slope_scale     = 'slope',
+                                  intercept_pct   = 'intercept',
+                                  slope_pct   = 'slope')) %>% 
+  add_header_row(values = c('','Points','%'), colwidths = c(3, 2, 2)) %>% 
+  align(j = c(1:6), part = 'all', align = 'center'  ) %>% 
+  hline(i = c(3, 5)) %>% 
+  set_caption("Conversion Coefficients for lower End of the Scales (early patients)",
+              autonum = run_autonum(seq_id = "tab", bkm = "full"))
+  
+
+
 ```
-
-- This is not necessarily valid when assessing progression, since there are subtle differences in how the scores behave over disease phases
-
--	mFARS would be the best reference to use (and other scores could be converted to mFARS). This is not necessarily true the other way around
-
--	Reasons: 
-
-  1)  FARS (FARS E) is assessing key stance functions in a very objective (timed) way. Some of those are lost early in the disease (or are never attained);
-  2)  While most patients can’t perform these anymore at time of diagnosis, the mFARS will be much more sensitive for smaller differences at early stages. 
-  3)  SARA and ICARS are not 	 
-
--	This leads to high intercepts in the conversion formula to mFARS (14.59 vs SARA, 11.06 vs ICARS)
-
-- Stance function overall is assessed in more detail (and less subjective) in the mFARS. Therefore, in the early phase (SARA<=8, ICARS<=20), mFARS (FARS E) is likely the superior tool. 
--	At such low scores, alternative conversion factors should be used (see graphs)
--	Appendicular function correlates very well overall, between all three scores. 
-
 
 
 # Methods
 
-## Subscales, Definitions
+## Definitions Subscales used in the Comparisons 
 
 | Subscore               | short    | Items                                                                                                      |
 |-----------------------|-----------------------|-------------------------------------------------------|
@@ -202,45 +243,6 @@ dt %>%
   geom_smooth(method = lm, se = F)+
   .leg_none
 
-dt <- dt. %>%
-  mutate(group = ifelse(ICARS <=23, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS, y = SARA)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-dt <- dt. %>%
-  mutate(group = ifelse(SARA <9 | ICARS <=23, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS, y = SARA)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-
 ```
 
 #### FARSn vs mFARS
@@ -248,7 +250,7 @@ dt %>%
 ```{r}
 
 dt <- dt. %>%
-  mutate(group = ifelse(mFARS <=20 , 'low', 'high'))
+  mutate(group = ifelse(FARSn <=24 , 'low', 'high'))
 
 dt %>% 
   mutate(title = 'all observations') %>% 
