@@ -26,9 +26,9 @@ rm(list = ls())
 # data for progression ----------------------------------------------------
 
 dt. <- bind_rows(
-  .dd.FA('icars.slope.chg') %>% filter(paramcd %in% c('ICARS','ICARS.ax','ICARS.ki')),
-  .dd.FA('sara.slope.chg')  %>% filter(paramcd %in% c('SARA','SARA.ax','SARA.ki','SARA.ku')),
-  .dd.FA('fars.slope.chg')  %>% filter(paramcd %in% c('FARSn','mFARS','FARS.E','FARS.BC','FARS.B'))
+  .dd.FA('icars.slope.chg') %>% filter(paramcd %in% c('ICARS','ICARS.ax','ICARS.ki','ICARS.od', .l.icars.ax)),
+  .dd.FA('sara.slope.chg')  %>% filter(paramcd %in% c('SARA','SARA.ax','SARA.ki','s4.speech', .l.sara.ax)),
+  .dd.FA('fars.slope.chg')  %>% filter(paramcd %in% c('FARSn','mFARS','FARS.E','FARS.BC','FARS.B','FARS.Am', .l.FARS.E))
 ) %>% 
   droplevels() %>% 
   select(-c('fpf', 'hpf', 'bl', 'bl.age')) %>% 
@@ -86,7 +86,15 @@ dt. %>%
   .wds('DATA derived/long.data')
 
   
+dt. %>% 
+  ungroup %>% filter(forslope == 1) %>% 
+  select(paramcd) %>% 
+  table()
 
-table( dt.$paramcd )
 levels( dt.$age.grp )
 range ( dt.$age )
+
+dt. %>% group_by(sjid, avisitn) %>% 
+  filter(paramcd == 'SARA')
+
+dt. %>% filter(avisitn == 11, sjid == 4208, forslope == 1) %>% ungroup 

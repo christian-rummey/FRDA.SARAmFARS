@@ -46,3 +46,4 @@ DATA derived/
 *.Rproj
 RESULTS*/
 outputs.*/
+_*
