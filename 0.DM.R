@@ -21,59 +21,76 @@ knitr::opts_chunk$set(warning  = F)
 #' ### Data 
 
 # packages ----------------------------------------------------------------
+
 rm(list = ls())
+
+scales.list <- c('mFARS'   ,'SARA'      ,'ICARS',
+                 'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
+                 'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
+                 'FARS.Am' ,'s4.speech' ,'ICARS.sp',
+                 'ICARS.od')
+
+mx.    <- .rt('../DATA other/scales.txt') %>% 
+  filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
+  mutate(paramcd = factor(paramcd, scales.list))
+
+steps. <- .dd.FA('steps')
 
 # data for progression ----------------------------------------------------
 
 dt. <- bind_rows(
-  .dd.FA('icars.slope.chg') %>% filter(paramcd %in% c('ICARS','ICARS.ax','ICARS.ki','ICARS.sp','ICARS.od', .l.icars.ax)),
-  .dd.FA('sara.slope.chg')  %>% filter(paramcd %in% c('SARA','SARA.ax','SARA.ki','s4.speech', .l.sara.ax)),
-  .dd.FA('fars.slope.chg')  %>% filter(paramcd %in% c('FARSn','mFARS','FARS.E','FARS.BC','FARS.B','FARS.Am', .l.FARS.E))
-) %>% 
-  droplevels() %>% 
-  select(-c('fpf', 'hpf', 'bl', 'bl.age')) %>% 
-  filter(study == 'FACOMS')
+  .dd.FA('icars.slope.chg'), 
+  .dd.FA('sara.slope.chg'),  
+  .dd.FA('fars.slope.chg')
+  ) %>% 
+  filter(study == 'FACOMS') %>% 
+  mutate(paramcd = factor(paramcd, scales.list)) %>% 
+  filter(!is.na(paramcd)) %>% 
+  select(-c('fpf', 'hpf', 'bl', 'bl.age','adt', 'neuro.score', 'dev.y')) %>% 
+  droplevels() 
 
 dt. <- .dd.FA('icars') %>% filter(paramcd == 'ICARS') %>% select(study, sjid, avisitn) %>% 
   left_join(dt.)
 
-with(dt., table(int, forslope, exclude = F))
+dt. %<>% 
+  left_join(mx.)
 
-dt. %>% 
-  filter(sjid == 4383) %>% 
-  # filter(sjid == 4201, paramcd == 'mFARS') %>% 
-  # filter(!is.na(int))
-  mutate()
+dt.pct <- dt. %>% 
+  mutate(aval = 100*aval/maxscore, chg = 100*chg/maxscore) %>% 
+  mutate(type = 'pct')
 
 dt. %<>% 
-    filter(!is.na(age))
+  mutate(type = 'val') %>% 
+  bind_rows(dt.pct)
 
-dt. %<>% 
-  mutate( age.grp = cut(age, c(0,8,12,16,25,40,100), labels = c('<8y', '8-11y', '12-15y', '16-24y',           '25-40y', '>40y' ), right = T))
+rm(dt.pct)
 
+dt. %<>%
+  filter(!is.na(age))
+
+# dt. %<>% 
+#   mutate( age.grp = cut(age, c(0,8,12,16,25,40,100), labels = c('<8y', '8-11y', '12-15y', '16-24y',           '25-40y', '>40y' ), right = T))
+
+with(dt., table(int, forslope, type, exclude = F))
 
 # adjust differential staring times to this subset ----------------------------------------
 
 dt. %<>%
-  group_by(sjid, paramcd, amb) %>%
+  group_by(sjid, paramcd, amb, type) %>%
+  arrange(sjid, avisitn, paramcd, type) %>% 
   mutate(time. = time. - min(time.))
 
+# complete it -------------------------------------------------------------
+
+dt. %<>% 
+  left_join(steps. %>% select(sjid, avisitn, fds, fds.act, step))
 
 # write -------------------------------------------------------------------
 
 dt. %>%
   .wds('DATA derived/long.data')
 
-  
 dt. %>% 
   ungroup %>% filter(forslope == 1) %>% 
   select(paramcd) %>% 
   table()
-
-levels( dt.$age.grp )
-range ( dt.$age )
-
-dt. %>% group_by(sjid, avisitn) %>% 
-  filter(paramcd == 'SARA')
-
-dt. %>% filter(avisitn == 11, sjid == 4208, forslope == 1) %>% ungroup 

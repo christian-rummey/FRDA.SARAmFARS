@@ -1,49 +1,55 @@
 
+source('0.DM.R')
+
 # Graph that compares 3 Scales, by items and type of function -------------
 
 scales <- .rt('../DATA other/scales.txt') %>% 
-  filter(paramcd %in% c('SARA.ax', 'SARA.ki','s4.speech', 'ICARS.ax', 'ICARS.ki', 'ICARS.od','ICARS.sp', 'FARS.E' ,'FARS.BC', 'FARS.Am')) %>% 
+  filter(paramcd %in% scales.list) %>% 
   mutate(score = case_when(
-    paramcd %in% c('FARS.E' ,'FARS.BC', 'FARS.Am')     ~ 'mFARS',
-    paramcd %in% c('SARA.ax', 'SARA.ki','s4.speech')   ~ 'SARA' ,
-    paramcd %in% c('ICARS.ax', 'ICARS.ki', 'ICARS.od', 'ICARS.sp') ~ 'ICARS'
-  )) %>% 
+    paramcd %in% scales.list[c(1,4,7,10)]     ~ 'mFARS',
+    paramcd %in% scales.list[c(2,5,8,11)]     ~ 'SARA',
+    paramcd %in% scales.list[c(3,6,9,12,13)]  ~ 'ICARS'
+    )) %>%
   mutate(score.max = case_when(
-    paramcd %in% c('FARS.E' ,'FARS.BC', 'FARS.Am')     ~ 93,
-    paramcd %in% c('SARA.ax', 'SARA.ki','s4.speech')   ~ 40,
-    paramcd %in% c('ICARS.ax', 'ICARS.ki', 'ICARS.od', 'ICARS.sp') ~ 100
-  )) %>% 
+    score == 'mFARS' ~  93,
+    score == 'SARA'  ~  40,
+    score == 'ICARS' ~ 100
+    )) %>% 
   mutate(score.type = case_when(
-    paramcd %in% c('SARA.ax', 'ICARS.ax', 'FARS.E')             ~ 'axial function',
-    paramcd %in% c('SARA.ki', 'ICARS.ki', 'FARS.BC')  ~ 'kinetic function',
-    TRUE ~ 'speech, bulbar function'
-  )) %>%
-  mutate( score = factor(score, c('mFARS','SARA','ICARS'))) %>% 
-  mutate( paramcd = factor(paramcd, c(
-    'FARS.Am','FARS.BC','FARS.E','ICARS.ax','ICARS.ki','ICARS.od','ICARS.sp','SARA.ax','s4.speech','SARA.ki'))) %>% 
-  arrange(score, paramcd) %>% 
-  group_by ( score) %>% 
-  mutate   ( ranks = cumsum(maxscore) ) %>% 
-  mutate   ( ranks.pct = 100*(ranks/score.max)) %>% 
-  mutate   ( maxscore = 100*maxscore/score.max) %>% 
-  select(score, paramcd, maxscore, ranks, ranks.pct, score.type)
+    paramcd %in% scales.list[c(  4, 5, 6 )]  ~ 'axial function',
+    paramcd %in% scales.list[c(  7, 8, 9 )]  ~ 'kinetic function',
+    paramcd %in% scales.list[c( 10,11,12 )]  ~ 'speech disorder',
+    paramcd %in% scales.list[c( 13       )]  ~ 'oculomotor disorder',
+    TRUE ~ 'Total Score'
+  ))
 
 # subscores graph ---------------------------------------------------------
 
-scales %>% 
-  mutate(ranks.end = lag(ranks.pct)) %>% 
-  mutate(ranks.end = ifelse(is.na(ranks.end), 0, ranks.end)) %>% 
-  mutate(text.y.value = (ranks.pct+ranks.end)/2) %>% 
-  ggplot()+geom_rect(colour = 'black')+
-  # aes(x = score)+
-  aes(ymin = -ranks.pct, ymax = -ranks.end)+
-  aes(xmin = -.5, xmax = .5)+
-  aes(fill = score.type)+
-  geom_text(aes(label = paramcd, y = -text.y.value, x = 0))+
+scales  %>%
+  mutate  ( pct = paste( round(100*maxscore/score.max,0), '%', sep = '' ) ) %>% 
+  mutate  ( paramcd = factor(paramcd, c('FARS.Am','FARS.BC','FARS.E','SARA.ax','s4.speech','SARA.ki','ICARS.ax','ICARS.ki','ICARS.sp','ICARS.od'))) %>% 
+  mutate  ( score = factor(score, scales.list[c(1,2,3)])) %>% 
+  filter  ( !is.na(paramcd)) %>% 
+  arrange ( score, paramcd ) %>% 
+  group_by( score ) %>% 
+  mutate  ( ranks     = cumsum( maxscore ) ) %>% 
+  mutate  ( ranks.pct = 100*(ranks/score.max )) %>% 
+  mutate  ( maxscore  = 100*maxscore/score.max ) %>% 
+  select  ( score, paramcd, maxscore, ranks, ranks.pct, score.type, pct) %>%
+  mutate  ( ranks.end = lag(ranks.pct) ) %>% 
+  mutate  ( ranks.end = ifelse(is.na(ranks.end), 0, ranks.end)) %>% 
+  mutate  ( text.y.value = (ranks.pct+ranks.end)/2) %>% 
+  ggplot()+geom_rect()+
+  aes     ( ymin = -ranks.pct, ymax = -ranks.end)+
+  aes     ( xmin = -.5, xmax = .5)+
+  aes     ( fill = score.type)+
+  geom_text(aes(label = pct, y = -text.y.value, x = 0))+
   facet_wrap(~score)+
   theme_void()+
-  scale_fill_brewer(palette = 'Set1', direction = -1)+
+  scale_fill_manual(values = c('#377EB8','#4DAF4A','#F0F0F0','#FFC000'))+
   theme(legend.position = 'top')
+
+# .sp(ti = 'Figure 1')
 
 # item graph --------------------------------------------------------------
 
