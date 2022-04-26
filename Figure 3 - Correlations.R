@@ -20,7 +20,7 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
     filter(!is.na(!!x.par) & !is.na(!!y.par)) %>% 
-    ungroup %>% select(-c(study, sjid, avisitn, age, amb, type, fds))
+    ungroup 
   
   dt..first <- ds %>% 
     filter(type == 'val') %>% 
@@ -28,14 +28,14 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
     filter(!is.na(!!x.par) & !is.na(!!y.par)) %>% 
-    ungroup %>% select(-c(study, sjid, avisitn, age, amb, type, fds))
+    ungroup 
   
   dt..pct <- ds %>% 
     filter(type == 'pct') %>% 
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
     filter(!is.na(!!x.par) & !is.na(!!y.par)) %>% 
-    ungroup %>% select(-c(study, sjid, avisitn, age, amb, type, fds))
+    ungroup 
   
   dt.. %>% 
     ggplot()+geom_point(shape = 21)+
