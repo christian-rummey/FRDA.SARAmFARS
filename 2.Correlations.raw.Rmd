@@ -11,7 +11,7 @@ output:
     df_print: paged
     number_sections: yes
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
   markdown:
     wrap: 100
 ---
@@ -25,11 +25,19 @@ library(corrr)
 ```{r, echo = F, message = F}
 
 dt. <- readRDS('DATA derived/long.data.rds') %>% 
-  mutate(paramcd = factor(paramcd, c('FARSn','mFARS','SARA','ICARS','FARS.E','SARA.ax','ICARS.ax','FARS.BC', 'SARA.ki', 'ICARS.ki'))) %>% 
+  mutate(paramcd = factor(paramcd, c(
+    'FARSn'  ,'mFARS','SARA','ICARS',
+    'FARS.E' , 'SARA.ax' , 'ICARS.ax',
+    'FARS.BC', 'SARA.ki', 'ICARS.ki', 
+    'FARS.Am', 's4.speech', 'ICARS.od'))) %>% 
   filter(forslope == 1) %>% 
   select(-c('forslope', 'int', 'chg', 'dev.y')) %>% 
   select(-time.) # has rounding issues, see 4208
 
+
+dt.oc <- dt. %>% 
+  filter(paramcd %in% c('FARS.Am', 'ICARS.od','s4.speech')) %>% 
+  spread(paramcd, aval)
 
 dt.ki <- dt. %>% 
   filter(paramcd %in% c('FARS.BC', 'ICARS.ki','SARA.ki')) %>% 

@@ -26,7 +26,7 @@ rm(list = ls())
 # data for progression ----------------------------------------------------
 
 dt. <- bind_rows(
-  .dd.FA('icars.slope.chg') %>% filter(paramcd %in% c('ICARS','ICARS.ax','ICARS.ki','ICARS.od', .l.icars.ax)),
+  .dd.FA('icars.slope.chg') %>% filter(paramcd %in% c('ICARS','ICARS.ax','ICARS.ki','ICARS.sp','ICARS.od', .l.icars.ax)),
   .dd.FA('sara.slope.chg')  %>% filter(paramcd %in% c('SARA','SARA.ax','SARA.ki','s4.speech', .l.sara.ax)),
   .dd.FA('fars.slope.chg')  %>% filter(paramcd %in% c('FARSn','mFARS','FARS.E','FARS.BC','FARS.B','FARS.Am', .l.FARS.E))
 ) %>% 
@@ -59,27 +59,6 @@ dt. %<>%
   mutate(time. = time. - min(time.))
 
 
-# initial version ---------------------------------------------------------
-
-# pars       <- c(
-#   'SARA',  'SARA.ax', 'SARA.ki',
-#   'mFARS', 'FARS.E' , 'FARS.B',
-#   'ICARS', 'ICARS.gp', 'ICARS.ki'
-# )
-# 
-# dt. <- bind_rows(
-#   .dd.FA('fars')  %>% filter(study == 'FACOMS', paramcd %in% pars),
-#   .dd.FA('icars') %>% filter(study == 'FACOMS', paramcd %in% pars),
-#   .dd.FA('sara')  %>% filter(study == 'FACOMS', paramcd %in% pars)
-#   ) %>% 
-#   select(-fpf, -hpf) %>% 
-#   spread( paramcd, aval ) %>% 
-#   filter( !is.na(SARA) | !is.na(ICARS)) %>% 
-#   gather( paramcd, aval, pars) %>% 
-#   .add.time() %>% 
-#   .add.demo(l = 3 ) %>% 
-#   left_join( .dd.FA('steps') %>% select(sjid, avisitn, amb)  )
-# 
 # write -------------------------------------------------------------------
 
 dt. %>%
