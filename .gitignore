@@ -42,8 +42,9 @@ vignettes/*.pdf
 # Ignore MD outputs
 *.html
 *.docx
+*.png
 DATA derived/
 *.Rproj
 RESULTS*/
-outputs.*/
+outputs*/
 _*
