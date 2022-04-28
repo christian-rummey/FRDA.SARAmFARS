@@ -24,7 +24,8 @@ knitr::opts_chunk$set(warning  = F)
 
 rm(list = ls())
 
-scales.list <- c('mFARS'   ,'SARA'      ,'ICARS',
+scales.list <- c('FARSn',
+                 'mFARS'   ,'SARA'      ,'ICARS',
                  'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
                  'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
                  'FARS.Am' ,'s4.speech' ,'ICARS.sp',
@@ -83,11 +84,14 @@ dt. %<>%
 # complete it -------------------------------------------------------------
 
 dt. %<>% 
-  left_join(steps. %>% select(sjid, avisitn, fds, fds.act, step))
+  left_join(steps. %>% select(sjid, avisitn, fds = fds.act, step))
 
 # write -------------------------------------------------------------------
 
-dt. %>%
+dt. %<>%
+  mutate(fds = ifelse(is.na(fds), 2, fds)) 
+
+dt. %>% # 4362, avis 6
   .wds('DATA derived/long.data')
 
 dt. %>% 
