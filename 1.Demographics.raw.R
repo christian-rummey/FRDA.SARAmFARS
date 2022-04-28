@@ -28,7 +28,7 @@ dt. <- readRDS('DATA derived/long.data.rds')
 dt. %<>% 
   ungroup %>%
   filter( forslope == 1) %>%
-  select( study, sjid, avisitn, age, amb, age.grp) %>% 
+  select( study, sjid, avisitn, age, amb) %>% 
   unique() %>% 
   ungroup 
 
@@ -37,36 +37,47 @@ dt. %<>%
 # fullow-up time ----------------------------------------------------------
 
 dt.fu <- dt. %>%
+  # filter ( sjid == 4208 ) %>%
   mutate ( amb.n = as.numeric((factor(amb)))) %>% 
   select ( study, sjid, avisitn, age, amb, amb.n ) %>% 
   unique %>% mutate(paramcd = 'dummy') %>% 
-  .duplicate_phase_visits() %>% 
+  .duplicate_phase_visits() %>%
   group_by(sjid) %>% 
   mutate ( fu       = max(age)-min(age) ) %>% 
   group_by(sjid, phase.n) %>% 
   mutate ( fu.phase = max(age)-min(age) ) %>%
-  filter ( dupline != T) %>% 
+  filter ( dupline != T) %>%
   group_by(sjid) %>% 
-  mutate ( age = min(age), age.last = max(age) ) %>%
+  mutate ( age.first = min(age), age.last = max(age) ) %>%
   mutate ( status = min(amb.n), status.last = max(amb.n)) %>% 
-  select ( study, sjid, age, age.last, amb, fu, fu.phase, status, status.last) %>% 
+  select ( study, sjid, age.first, age.last, amb, fu, fu.phase, status, status.last) %>% 
   unique %>% 
   spread ( amb, fu.phase) %>% 
   rename ( fu.amb = ambulatory, fu.namb = `non-amb.`)
 
 dt.fu %<>% 
   left_join(.dd.FA('demo') %>% select(sjid, site, sex, symp, diag, sev.o, gaa1, gaa2, pm, pm.grp)) %>% 
-  mutate( since.d = age-diag)
+  mutate( since.d = age.first-diag)
 
 dt.fu %<>% 
   mutate(no.fu = ifelse(fu==0, 1, 0)) %>% 
   mutate(pm = ifelse(pm == 0, 0, 1)) %>% 
   arrange(status)
 
+dt.fu %<>% # this is new Apr 27 
+  # select(-c(age, since.d)) %>% 
+  unique %>% 
+  group_by(sjid) %>% 
+  mutate(
+    fu.amb  = mean(fu.amb, na.rm=T),
+    fu.namb = mean(fu.namb, na.rm=T)
+    ) %>% 
+  unique
+
 # Demo Table by type----------------------------------------------------------------
 
-var_label(dt.fu) <- list(sex       = 'Sex',
-                      age       = 'Age (BL)', 
+var_label(dt.fu) <- list(sex    = 'Sex',
+                      age.first = 'Age (BL)', 
                       symp      = 'Age of Onset', 
                       gaa1      = 'GAA1',
                       gaa2      = 'GAA2', 
@@ -83,7 +94,7 @@ var_label(dt.fu) <- list(sex       = 'Sex',
 )
 
 tb <- jstable::CreateTableOne2(
-  vars       = c( 'sex','age','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
   strata     = c( 'sev.o' ),
@@ -94,7 +105,7 @@ tb <- jstable::CreateTableOne2(
   .ct
 
 tb <- tableone::CreateTableOne(
-  vars       = c( 'sex','age','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   strata     = c( 'sev.o' ),
   data       = dt.fu, 
@@ -103,7 +114,7 @@ tb <- tableone::CreateTableOne(
   )    
 
 tb %>% print(varLabels = T, 
-             nonnormal  = c( 'age', 'symp','gaa1' ,'gaa2','age','age.last','sinced','fu','fu.amb','fu.namb' , 'pm', 'since.d'),
+             nonnormal  = c( 'symp','gaa1' ,'gaa2','age,first','age.last','sinced','fu','fu.amb','fu.namb' , 'pm', 'since.d'),
              contDigits = 1, 
              catDigits = 0,
              missing = F,
@@ -121,6 +132,9 @@ tb %>% print(varLabels = T,
 
 dt. %<>% 
   left_join(.dd.FA('demo') %>% select(sjid, sev.o))
+
+dt. %<>%
+  mutate( age.grp = cut(age, c(0,8,12,16,25,40,100), labels = c('<8y', '8-11y', '12-15y', '16-24y',           '25-40y', '>40y' ), right = T))
 
 pct <- dt. %>% 
   group_by(age.grp) %>% 

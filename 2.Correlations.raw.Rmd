@@ -22,22 +22,26 @@ knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align='center', echo=F, war
 library(corrr)
 ```
 
-```{r, echo = F, message = F}
+```{r prepare data, echo = F, message = F}
 
-dt. <- readRDS('DATA derived/long.data.rds') %>% 
+dt. <- readRDS('DATA derived/long.data.rds') %>%
+  group_by(sjid, paramcd, amb) %>% 
+  filter(avisitn == min(avisitn)) %>% 
   mutate(paramcd = factor(paramcd, c(
     'FARSn'  ,'mFARS','SARA','ICARS',
     'FARS.E' , 'SARA.ax' , 'ICARS.ax',
     'FARS.BC', 'SARA.ki', 'ICARS.ki', 
-    'FARS.Am', 's4.speech', 'ICARS.od'))) %>% 
+    'FARS.Am', 's4.speech', 'ICARS.sp'))) %>% 
   filter(forslope == 1) %>% 
-  select(-c('forslope', 'int', 'chg', 'dev.y')) %>% 
+  select(-c('forslope', 'int', 'chg', 'maxscore')) %>% 
   select(-time.) # has rounding issues, see 4208
 
 
-dt.oc <- dt. %>% 
-  filter(paramcd %in% c('FARS.Am', 'ICARS.od','s4.speech')) %>% 
+dt.od <- dt. %>% 
+  filter(paramcd %in% c('FARS.Am', 'ICARS.sp','s4.speech')) %>% 
+  ungroup %>% 
   spread(paramcd, aval)
+
 
 dt.ki <- dt. %>% 
   filter(paramcd %in% c('FARS.BC', 'ICARS.ki','SARA.ki')) %>% 
@@ -53,33 +57,53 @@ dt. %<>%
 
 ```
 
-# Summary
+```{r full scores}
+tmp    <- dt. %>% select( sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate( type = 'scale' )
+tmp2   <- dt. %>% select( sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate( type = 'pct'   ) %>% 
+  mutate( mFARS = 100 * mFARS /93  ) %>% 
+  mutate( FARSn = 100 * FARSn /125 ) %>% 
+  mutate( SARA  = 100 * SARA  /40  ) %>% 
+  mutate( ICARS = 100 * ICARS /100 )
+tmp.od  <- dt.od %>% select(sjid, age, FARS.Am , s4.speech, ICARS.sp ) %>% mutate(type = 'scale')
+tmp2.od  <- dt.od %>% select(sjid, age, FARS.Am , s4.speech, ICARS.sp ) %>% mutate(type = 'pct') %>% 
+  mutate( FARS.Am = 100 * FARS.Am   /5 ) %>% 
+  mutate( s4.speech  = 100 * s4.speech /6 ) %>% 
+  mutate( ICARS.sp = 100 * ICARS.sp  /8 )
+tmp.ki  <- dt.ki %>% select(sjid, age, FARS.BC, SARA.ki, ICARS.ki ) %>% mutate(type = 'scale')
+tmp2.ki  <- dt.ki %>% select(sjid, age, FARS.BC, SARA.ki, ICARS.ki ) %>% mutate(type = 'pct'  ) %>% 
+  mutate( FARS.BC  = 100 * FARS.BC  /52 ) %>% 
+  mutate( SARA.ki  = 100 * SARA.ki  /16 ) %>% 
+  mutate( ICARS.ki = 100 * ICARS.ki /52 )
 
-- Ataxia scores can be reliably converted, to comparatively assess disease stage. 
+tmp.ax  <- dt.gp %>% select(sjid, age, FARS.E , SARA.ax, ICARS.ax ) %>% mutate(type = 'scale')
+tmp2.ax  <- dt.gp %>% select(sjid, age, FARS.E , SARA.ax, ICARS.ax ) %>% mutate(type = 'pct'  ) %>% 
+  mutate( FARS.E   = 100 * FARS.E   /36 ) %>% 
+  mutate( SARA.ax  = 100 * SARA.ax  /18 ) %>% 
+  mutate( ICARS.ax = 100 * ICARS.ax /34 )
 
-- This is not valid when assessing progression, due to subtle differences in how the scores behave, and progression differs between disease phases (ambulatory vs non-ambulatory) 
+																																												  
 
-- mFARS is the most suitable reference score.
+											 
 
--	Reasons: 
+		   
 
-  1) mFARS (FARS E) is assessing key stance/balance functions that is lost very early (often pre-diagnosis), or is never attained. 
-  2) Because some of these functions are maxed out in most patients, converstion to mFARS requires a large intercept (see table below). 
-  3) Balance function in mFARS is assessed in a more objective (timed) way, compared to other ataxia scales.  
-  4) These functions should also make mFARS more sensitive in early diesease stages.
+																																   
+																																		
+																											  
+																					
 
-- Stance function overall is assessed  in the mFARS. Therefore, in the early phase (SARA<=8, ICARS<=20), mFARS (FARS E) is likely the superior tool. 
--	At such low scores, alternative conversion factors should be used (see graphs)
--	Appendicular function correlates well overall, between all three scores. 
+																																					 
+																				
+																		   
 
 
 
-```{r}
-tmp  <- dt. %>% select(sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate(type = 'scale')
-tmp2 <- dt. %>% select(sjid, age, mFARS, FARSn, SARA, ICARS) %>% mutate(type = 'pct') %>% 
-  mutate(mFARS = 100*mFARS /93 ) %>% 
-  mutate(SARA  = 100*SARA  /40 ) %>% 
-  mutate(ICARS = 100*ICARS /100)
+	  
+																					   
+																						  
+									 
+									 
+								
 
 scores. <- bind_rows(
   tmp  %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS, FARSn),
@@ -89,7 +113,25 @@ scores. <- bind_rows(
   tmp2 %>% rename(score = mFARS) %>% mutate(dep = 'mFARS') %>% gather(indep, value, SARA, ICARS, FARSn),
   tmp2 %>% rename(score = FARSn) %>% mutate(dep = 'FARSn') %>% gather(indep, value, SARA, ICARS, mFARS),
   tmp2 %>% rename(score = SARA ) %>% mutate(dep = 'SARA' ) %>% gather(indep, value, mFARS, ICARS, FARSn),
-  tmp2 %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA, FARSn)
+  tmp2 %>% rename(score = ICARS) %>% mutate(dep = 'ICARS') %>% gather(indep, value, mFARS, SARA, FARSn),
+  tmp.od %>% rename(score = FARS.Am   ) %>% mutate(dep = 'FARS.Am'  ) %>% gather(indep, value, s4.speech, ICARS.sp),
+  tmp.od %>% rename(score = s4.speech ) %>% mutate(dep = 's4.speech') %>% gather(indep, value, FARS.Am , ICARS.sp),
+  tmp.od %>% rename(score = ICARS.sp  ) %>% mutate(dep = 'ICARS.sp' ) %>% gather(indep, value, s4.speech , FARS.Am),
+  tmp2.od %>% rename(score = FARS.Am   ) %>% mutate(dep = 'FARS.Am'  ) %>% gather(indep, value, s4.speech, ICARS.sp),
+  tmp2.od %>% rename(score = s4.speech ) %>% mutate(dep = 's4.speech') %>% gather(indep, value, FARS.Am , ICARS.sp),
+  tmp2.od %>% rename(score = ICARS.sp  ) %>% mutate(dep = 'ICARS.sp' ) %>% gather(indep, value, s4.speech , FARS.Am),
+  tmp.ax %>% rename(score = FARS.E  ) %>% mutate(dep = 'FARS.E'  ) %>% gather(indep, value, SARA.ax, ICARS.ax),
+  tmp.ax %>% rename(score = SARA.ax ) %>% mutate(dep = 'SARA.ax' ) %>% gather(indep, value, FARS.E , ICARS.ax),
+  tmp.ax %>% rename(score = ICARS.ax) %>% mutate(dep = 'ICARS.ax') %>% gather(indep, value, SARA.ax , FARS.E),
+  tmp2.ax %>% rename(score = FARS.E  ) %>% mutate(dep = 'FARS.E'  ) %>% gather(indep, value, SARA.ax, ICARS.ax),
+  tmp2.ax %>% rename(score = SARA.ax ) %>% mutate(dep = 'SARA.ax' ) %>% gather(indep, value, FARS.E , ICARS.ax),
+  tmp2.ax %>% rename(score = ICARS.ax) %>% mutate(dep = 'ICARS.ax') %>% gather(indep, value, SARA.ax , FARS.E),
+  tmp.ki %>% rename(score = FARS.BC  ) %>% mutate(dep = 'FARS.BC'  ) %>% gather(indep, value, SARA.ki, ICARS.ki),
+  tmp.ki %>% rename(score = SARA.ki ) %>% mutate(dep = 'SARA.ki' ) %>% gather(indep, value, FARS.BC , ICARS.ki),
+  tmp.ki %>% rename(score = ICARS.ki) %>% mutate(dep = 'ICARS.ki') %>% gather(indep, value, SARA.ki , FARS.BC),
+  tmp2.ki %>% rename(score = FARS.BC  ) %>% mutate(dep = 'FARS.BC'  ) %>% gather(indep, value, SARA.ki, ICARS.ki),
+  tmp2.ki %>% rename(score = SARA.ki ) %>% mutate(dep = 'SARA.ki' ) %>% gather(indep, value, FARS.BC , ICARS.ki),
+  tmp2.ki %>% rename(score = ICARS.ki) %>% mutate(dep = 'ICARS.ki') %>% gather(indep, value, SARA.ki , FARS.BC)
 ) 
 
 table <- scores. %>% 
@@ -101,8 +143,8 @@ table <- scores. %>%
   select ( dep, indep, term, estimate) %>% 
   spread ( term, estimate ) %>% 
   rename ( intercept = `(Intercept)`, slope = value ) %>% 
-  mutate ( dep   = factor(dep, c('mFARS', 'FARSn','SARA', 'ICARS'))) %>% 
-  mutate ( indep = factor(indep, c('mFARS', 'FARSn', 'SARA', 'ICARS'))) %>% 
+  mutate ( dep   = factor(dep, c('mFARS', 'FARSn','SARA', 'ICARS', 'FARS.E', 'SARA.ax', 'ICARS.ax', 'FARS.BC', 'SARA.ki', 'ICARS.ki', 'FARS.Am', 's4.speech', 'ICARS.sp'))) %>% 
+  mutate ( indep = factor(indep, c('mFARS', 'FARSn', 'SARA', 'ICARS', 'FARS.E', 'SARA.ax', 'ICARS.ax', 'FARS.BC', 'SARA.ki', 'ICARS.ki', 'FARS.Am', 's4.speech', 'ICARS.sp'))) %>% 
   arrange( type, dep, indep) %>% 
   pivot_wider(id_cols = c('dep', 'indep'), names_from = c('type'), values_from = c('intercept', 'slope') ) %>% 
   select(dep, indep, intercept_scale, slope_scale, intercept_pct, slope_pct) 
@@ -118,11 +160,18 @@ table %>%
                                   slope_pct   = 'slope')) %>% 
   add_header_row(values = c('','Points','%'), colwidths = c(2, 2, 2)) %>% 
   align(j = c(1:6), part = 'all', align = 'center'  ) %>% 
-  hline(i = c(3, 6)) %>% 
+  hline(i = c(3, 6,9,12,14,16,18,20,22,24)) %>% 
   set_caption("Conversion Coefficients for full Scales",
               autonum = run_autonum(seq_id = "tab", bkm = "full"))
 
-table <- scores. %>% 
+table %>% 
+  saveRDS('DATA derived/coefficients.rds')
+
+```
+
+```{r early scores}
+
+table2 <- scores. %>% 
   mutate(threshold = ifelse(indep == 'SARA', 9, ifelse(indep == 'ICARS', 23, ifelse(indep == 'mFARS', 21, ifelse(indep == 'FARSn', 24, NA))))) %>% 
   filter(value<threshold) %>% 
   group_by(type, dep, indep, threshold) %>% 
@@ -139,7 +188,7 @@ table <- scores. %>%
   pivot_wider(id_cols = c('dep', 'indep','threshold'), names_from = c('type'), values_from = c('intercept', 'slope') ) %>% 
   select(dep, indep, threshold, intercept_scale, slope_scale, intercept_pct, slope_pct) 
 
-table %>%
+table2 %>%
   filter(!((dep == 'SARA' | dep == 'ICARS') & indep == 'FARSn')) %>% 
   flextable() %>% 
   colformat_double(digits = 2) %>% 
@@ -153,264 +202,4 @@ table %>%
   hline(i = c(3, 5)) %>% 
   set_caption("Conversion Coefficients for lower End of the Scales (early patients)",
               autonum = run_autonum(seq_id = "tab", bkm = "full"))
-  
-
-
-```
-
-
-# Methods
-
-## Definitions Subscales used in the Comparisons 
-
-| Subscore               | short    | Items                                                                                                      |
-|-----------------------|-----------------------|-------------------------------------------------------|
-| SARA Axial             | SARA.ax  | Gait (8), stance (6), sit (4)                                                                              |
-| SARA Kinetic Function  | SARA.ki  | Finger Chase (4), Finger Nose (4), Alternating Hand movements (4), Heel Shin Slide (4)                     |
-| ICARS Gait/Posture     | ICARS.gp | walk, gait, stand eyes open, spread of feet, body sway eyes open/closed, sitting                           |
-| ICARS Kinetic Function | ICARS.ki | nee tibia, heel to knee, finger nose dysmetria/tremor, finger-finger, lterning hand movements, spiral draw |
-
-# Results
-
-## Correlation Plots
-
-### Total Scores
-
-#### mFARS vs SARA
-
-```{r}
-
-dt <- dt. %>%
-  # mutate(SARA = SARA/40) %>%
-  # mutate(mFARS = mFARS/93) %>% 
-  mutate(group = ifelse(SARA <= 8, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = SARA, y = mFARS)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 75)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-#### mFARS vs ICARS
-
-```{r}
-
-dt <- dt. %>%
-  mutate(group = ifelse(ICARS <=20, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS, y = mFARS)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 75)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-#### SARA vs ICARS
-
-```{r}
-
-dt <- dt. %>%
-  mutate(group = ifelse(SARA <=8 , 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS, y = SARA)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-#### FARSn vs mFARS
-
-```{r}
-
-dt <- dt. %>%
-  mutate(group = ifelse(FARSn <=24 , 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = FARSn, y = mFARS)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-dt <- dt. %>%
-  mutate(group = ifelse(FARSn <=20, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS, y = SARA)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-dt <- dt. %>%
-  mutate(group = ifelse(SARA <9 | ICARS <=23, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = FARSn, y = mFARS)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 30)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-
-```
-
-
-
-### Axial Function
-
-#### FARS E vs SARA.ax
-
-```{r}
-
-dt <- dt.gp %>%
-  mutate(group = ifelse(SARA.ax <=4, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = SARA.ax, y = FARS.E)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 38)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-#### FARS E vs ICARS.gp
-
-```{r}
-
-dt <- dt.gp %>%
-  mutate(group = ifelse(ICARS.ax <=8, 'low', 'high'))
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS.ax, y = FARS.E)+
-  aes(color = group)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T, color = 'black', label.y = 38)+
-  geom_smooth(method = lm, se = F, color = 'black')+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-### Appendicular Function
-
-#### FARS BC vs SARA.ki
-
-```{r}
-
-dt <- dt.ki
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = SARA.ki, y = FARS.BC)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
-```
-
-#### FARS BC vs SARA.ki
-
-```{r}
-
-dt <- dt.ki
-
-dt %>% 
-  mutate(title = 'all observations') %>% 
-  bind_rows( dt %>%
-               group_by(sjid) %>% 
-               filter(age == min(age)) %>%
-               mutate(title = 'first observation only')) %>%
-  ggplot()+geom_point(alpha = .4)+
-  facet_wrap(~title)+
-  aes(x = ICARS.ki, y = FARS.BC)+
-  ggpubr::stat_regline_equation(na.rm = T, show.legend = T)+
-  geom_smooth(method = lm, se = F)+
-  .leg_none
-
 ```
