@@ -1,11 +1,8 @@
 
-dt.  <- readRDS('DATA derived/long.data.rds') %>% 
-  # filter(amb == 'ambulatory') %>%
-  filter( forslope == 1 )
-
 # . -----------------------------------------------------------------------
 
-dt <- dt. %>%
+dt. <- readRDS('DATA derived/long.data.rds') %>%
+  filter ( type2 == 'all') %>% 
   select ( study, sjid, avisitn, age, amb, paramcd, aval, fds )
 
 # normal ones -------------------------------------------------------------
@@ -56,24 +53,28 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     .leg_none
 }
 
-# dt %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
+# dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
 # dt %>% my.cor.facet('ICARS.ax', 34, 'FARS.E',  36 )
 # dt %>% my.cor.facet('ICARS.ax', 34/100, 'FARS.E',  36/100 )
 # dt %>% my.cor.facet('ICARS.od', 6, 's4.speech',  6 )
 # dt %>% my.cor.facet('ICARS.od', 6, 'FARS.Am',  5 )
 # dt %>% my.cor.facet('s4.speech', 6, 'FARS.Am',  5 )
 
-G <- dt %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
-H <- dt %>% my.cor.facet('SARA' ,  40, 'mFARS',  93 )
-I <- dt %>% my.cor.facet('SARA' ,  40, 'ICARS', 100 )
-D <- dt %>% my.cor.facet('ICARS.ax',  34, 'FARS.E'   , 36 )
-E <- dt %>% my.cor.facet('SARA.ax' ,  20, 'FARS.E'   , 36 )
-F <- dt %>% my.cor.facet('SARA.ax' ,  20, 'ICARS.ax' , 34 )
-A <- dt %>% my.cor.facet('ICARS.ki',  52, 'FARS.BC'  , 52 )
-B <- dt %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 )
-C <- dt %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
+G <- dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
+H <- dt. %>% my.cor.facet('SARA' ,  40, 'mFARS',  93 )
+I <- dt. %>% my.cor.facet('SARA' ,  40, 'ICARS', 100 )
+D <- dt. %>% my.cor.facet('ICARS.ax',  34, 'FARS.E'   , 36 )
+E <- dt. %>% my.cor.facet('SARA.ax' ,  20, 'FARS.E'   , 36 )
+F <- dt. %>% my.cor.facet('SARA.ax' ,  20, 'ICARS.ax' , 34 )
+A <- dt. %>% my.cor.facet('ICARS.ki',  52, 'FARS.BC'  , 52 )
+B <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 )
+C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
 
 p <- ggarrange(A, B, C, D, E, F, G, H, I, labels = c('A','B','C','D', 'E', 'F', 'G', 'H', 'I'), ncol = 3, nrow = 3)
 p
 
 # ggsave('Figure 3 - Correlations.png', plot = p, height = 13.5*.9, width = 13.5*.9)
+
+# . -----------------------------------------------------------------------
+
+rm(A, B, C, D, E, F, G, H, I, p)
