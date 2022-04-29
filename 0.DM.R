@@ -48,16 +48,20 @@ dt. <- bind_rows(
   mutate(paramcd = factor(paramcd, scales.list)) %>% 
   filter(!is.na(paramcd)) %>% 
   select(-c('fpf', 'hpf', 'bl', 'bl.age','adt', 'neuro.score', 'dev.y')) %>% 
+  filter( forslope == 1 ) %>% #basta
+  select(-c(int, chg, forslope)) %>% 
+  group_by(sjid, avisitn, paramcd) %>% 
   droplevels() 
 
-dt. <- .dd.FA('icars') %>% filter(paramcd == 'ICARS') %>% select(study, sjid, avisitn) %>% 
-  left_join(dt.)
+dt. <- .dd.FA('icars') %>% filter(study == 'FACOMS', paramcd == 'ICARS') %>% select(study, sjid, avisitn) %>% 
+  left_join(dt.) %>% 
+  group_by(sjid, avisitn)
 
 dt. %<>% 
   left_join(mx.)
 
 dt.pct <- dt. %>% 
-  mutate(aval = 100*aval/maxscore, chg = 100*chg/maxscore) %>% 
+  mutate(aval = 100*aval/maxscore) %>% 
   mutate(type = 'pct')
 
 dt. %<>% 
@@ -72,7 +76,7 @@ dt. %<>%
 # dt. %<>% 
 #   mutate( age.grp = cut(age, c(0,8,12,16,25,40,100), labels = c('<8y', '8-11y', '12-15y', '16-24y',           '25-40y', '>40y' ), right = T))
 
-with(dt., table(int, forslope, type, exclude = F))
+with(dt., table(type, paramcd, exclude = F))
 
 # adjust differential staring times to this subset ----------------------------------------
 
@@ -81,20 +85,27 @@ dt. %<>%
   arrange(sjid, avisitn, paramcd, type) %>% 
   mutate(time. = time. - min(time.))
 
+# first.visit -------------------------------------------------------------
+
+dt. %<>% 
+  mutate(type2 = 'all') %>% 
+  bind_rows(
+    dt. %>%
+      group_by(sjid, paramcd) %>% 
+      filter(avisitn == min(avisitn)) %>% 
+      mutate(type2 = 'first')
+  )
+
 # complete it -------------------------------------------------------------
 
 dt. %<>% 
-  left_join(steps. %>% select(sjid, avisitn, fds = fds.act, step))
+  left_join(steps. %>% select(sjid, avisitn, fds = fds.act))
 
 # write -------------------------------------------------------------------
 
 dt. %<>%
-  mutate(fds = ifelse(is.na(fds), 2, fds)) 
+  mutate(fds = ifelse(is.na(fds) & sjid == 4362, 2, fds)) 
 
 dt. %>% # 4362, avis 6
   .wds('DATA derived/long.data')
 
-dt. %>% 
-  ungroup %>% filter(forslope == 1) %>% 
-  select(paramcd) %>% 
-  table()
