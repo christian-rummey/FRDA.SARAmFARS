@@ -78,6 +78,8 @@ scores.amb <- scores. %>%
   mutate ( split.val = median(value) ) %>% 
   mutate ( split = ifelse(value < split.val, 'low','hig') )
 
+scores.    %>% saveRDS('DATA derived/scores.rds')
+scores.amb %>% saveRDS('DATA derived/scores.amb.rds')
 
 ```
 

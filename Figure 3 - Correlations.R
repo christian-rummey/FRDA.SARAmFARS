@@ -39,8 +39,8 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     aes( x = !!x.par, y = !!y.par )+
     # stat_regline_equation(label.y = y.max*.80)+
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)))+
-    geom_smooth()+
-    geom_smooth(method = lm, color = 'red')+
+    geom_smooth( formula = y ~ poly(x, 3), method = 'lm', color = 'blue')+
+    geom_smooth( method = lm, color = 'red')+
     stat_regline_equation(label.y = y.max*.95, data = dt..pct)+
     stat_cor(label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct)+
     # geom_smooth(method = lm, color = 'green', linetype = 'dashed', data = dt..pct)+
@@ -54,7 +54,7 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
 }
 
 # dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
-# dt %>% my.cor.facet('ICARS.ax', 34, 'FARS.E',  36 )
+# dt. %>% my.cor.facet('SARA.ax', 18, 'FARS.E',  36 )
 # dt %>% my.cor.facet('ICARS.ax', 34/100, 'FARS.E',  36/100 )
 # dt %>% my.cor.facet('ICARS.od', 6, 's4.speech',  6 )
 # dt %>% my.cor.facet('ICARS.od', 6, 'FARS.Am',  5 )
