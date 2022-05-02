@@ -78,7 +78,7 @@ dt. %<>%
 
 with(dt., table(type, paramcd, exclude = F))
 
-# adjust differential staring times to this subset ----------------------------------------
+# adjust differential staring times to this subset ------------------------
 
 dt. %<>%
   group_by(sjid, paramcd, amb, type) %>%
@@ -106,6 +106,59 @@ dt. %<>%
 dt. %<>%
   mutate(fds = ifelse(is.na(fds) & sjid == 4362, 2, fds)) 
 
-dt. %>% # 4362, avis 6
-  .wds('DATA derived/long.data')
+# dt. %>% # 4362, avis 6
+#   .wds('DATA derived/long.data')
+
+
+# correlated variables ----------------------------------------------------
+
+scales.list <- c('FARSn',
+                 'mFARS'   ,'SARA'      ,'ICARS',
+                 'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
+                 'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
+                 'FARS.Am' ,'s4.speech' ,'ICARS.sp',
+                 'ICARS.od')
+
+mx.    <- .rt('../DATA other/scales.txt') %>% 
+  filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
+  mutate(paramcd = factor(paramcd, scales.list))
+
+dt.w <- dt. %>%
+  spread(paramcd, aval)
+
+scores. <- bind_rows(
+  dt.w %>% mutate(score = mFARS, dep = 'mFARS') %>% select(-scales.list[!(scales.list %in% scales.list[c(1,3:4)] )]) %>% gather(indep, value, scales.list[c(1,3:4)]),
+  dt.w %>% mutate(score = SARA , dep = 'SARA' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(2,4)]   )]) %>% gather(indep, value, scales.list[c(2,4)]),
+  dt.w %>% mutate(score = ICARS, dep = 'ICARS') %>% select(-scales.list[!(scales.list %in% scales.list[c(2,3)]   )]) %>% gather(indep, value, scales.list[c(2,3)]),
+  dt.w %>% mutate(score = FARS.E  , dep = 'FARS.E'  ) %>% select(-scales.list[!(scales.list %in% scales.list[c(6,7)] )]) %>% gather(indep, value, scales.list[c(6,7)]),
+  dt.w %>% mutate(score = SARA.ax , dep = 'SARA.ax' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(5,7)] )]) %>% gather(indep, value, scales.list[c(5,7)]),
+  dt.w %>% mutate(score = ICARS.ax, dep = 'ICARS.ax') %>% select(-scales.list[!(scales.list %in% scales.list[c(5,6)] )]) %>% gather(indep, value, scales.list[c(5,6)]),
+  dt.w %>% mutate(score = FARS.BC , dep = 'FARS.BC' ) %>% select(-scales.list[!(scales.list %in% scales.list[c( 9,10)] )]) %>% gather(indep, value, scales.list[c(9,10)]),
+  dt.w %>% mutate(score = SARA.ki , dep = 'SARA.ki' ) %>% select(-scales.list[!(scales.list %in% scales.list[c( 8,10)] )]) %>% gather(indep, value, scales.list[c(8,10)]),
+  dt.w %>% mutate(score = ICARS.ki, dep = 'ICARS.ki') %>% select(-scales.list[!(scales.list %in% scales.list[c( 8, 9)] )]) %>% gather(indep, value, scales.list[c(8,9)]),
+  dt.w %>% mutate(score = mFARS, dep = 'FARS.Am'  ) %>% select(-scales.list[!(scales.list %in% scales.list[c(12,13)] )]) %>% gather(indep, value, scales.list[c(12,13)]),
+  dt.w %>% mutate(score = mFARS, dep = 's4.speech') %>% select(-scales.list[!(scales.list %in% scales.list[c(11,13)] )]) %>% gather(indep, value, scales.list[c(11,13)]),
+  dt.w %>% mutate(score = mFARS, dep = 'ICARS.sp' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(11,12)] )]) %>% gather(indep, value, scales.list[c(11,12)])
+) 
+
+# add a split
+
+scores.amb <- scores. %>% 
+  filter( amb == 'ambulatory' ) %>% 
+  group_by( dep, indep ) %>% 
+  filter(  dep %in% scales.list[c(2,3,4,5,6,7)]) %>% 
+  filter(indep %in% scales.list[c(2,3,4,5,6,7)]) %>% 
+  # left_join(mx. %>% mutate(maxscore = maxscore*.5) %>% rename(indep = paramcd, split.val = maxscore)) %>%
+  # mutate ( split.val = case_when (
+  #   indep == 'SARA' ~ 9,
+  #   indep == 'ICARS', 23, 
+  #   indep == 'mFARS', 21,
+  #   indep == 'FARSn', 24, 
+  #   NA)) %>%
+  filter ( !is.na(value) ) %>% 
+  mutate ( split.val = median(value) ) %>% 
+  mutate ( split = ifelse(value < split.val, 'low','hig') )
+
+scores.    %>% saveRDS('DATA derived/scores.rds')
+scores.amb %>% saveRDS('DATA derived/scores.amb.rds')
 
