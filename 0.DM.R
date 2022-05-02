@@ -112,53 +112,48 @@ dt. %<>%
 
 # correlated variables ----------------------------------------------------
 
-scales.list <- c('FARSn',
-                 'mFARS'   ,'SARA'      ,'ICARS',
-                 'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
-                 'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
-                 'FARS.Am' ,'s4.speech' ,'ICARS.sp',
-                 'ICARS.od')
-
 mx.    <- .rt('../DATA other/scales.txt') %>% 
   filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
   mutate(paramcd = factor(paramcd, scales.list))
 
 dt.w <- dt. %>%
-  spread(paramcd, aval)
+  select(-maxscore, -time.) %>% 
+  spread(paramcd, aval) 
 
 scores. <- bind_rows(
-  dt.w %>% mutate(score = mFARS, dep = 'mFARS') %>% select(-scales.list[!(scales.list %in% scales.list[c(1,3:4)] )]) %>% gather(indep, value, scales.list[c(1,3:4)]),
-  dt.w %>% mutate(score = SARA , dep = 'SARA' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(2,4)]   )]) %>% gather(indep, value, scales.list[c(2,4)]),
-  dt.w %>% mutate(score = ICARS, dep = 'ICARS') %>% select(-scales.list[!(scales.list %in% scales.list[c(2,3)]   )]) %>% gather(indep, value, scales.list[c(2,3)]),
-  dt.w %>% mutate(score = FARS.E  , dep = 'FARS.E'  ) %>% select(-scales.list[!(scales.list %in% scales.list[c(6,7)] )]) %>% gather(indep, value, scales.list[c(6,7)]),
-  dt.w %>% mutate(score = SARA.ax , dep = 'SARA.ax' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(5,7)] )]) %>% gather(indep, value, scales.list[c(5,7)]),
-  dt.w %>% mutate(score = ICARS.ax, dep = 'ICARS.ax') %>% select(-scales.list[!(scales.list %in% scales.list[c(5,6)] )]) %>% gather(indep, value, scales.list[c(5,6)]),
-  dt.w %>% mutate(score = FARS.BC , dep = 'FARS.BC' ) %>% select(-scales.list[!(scales.list %in% scales.list[c( 9,10)] )]) %>% gather(indep, value, scales.list[c(9,10)]),
-  dt.w %>% mutate(score = SARA.ki , dep = 'SARA.ki' ) %>% select(-scales.list[!(scales.list %in% scales.list[c( 8,10)] )]) %>% gather(indep, value, scales.list[c(8,10)]),
-  dt.w %>% mutate(score = ICARS.ki, dep = 'ICARS.ki') %>% select(-scales.list[!(scales.list %in% scales.list[c( 8, 9)] )]) %>% gather(indep, value, scales.list[c(8,9)]),
-  dt.w %>% mutate(score = mFARS, dep = 'FARS.Am'  ) %>% select(-scales.list[!(scales.list %in% scales.list[c(12,13)] )]) %>% gather(indep, value, scales.list[c(12,13)]),
-  dt.w %>% mutate(score = mFARS, dep = 's4.speech') %>% select(-scales.list[!(scales.list %in% scales.list[c(11,13)] )]) %>% gather(indep, value, scales.list[c(11,13)]),
-  dt.w %>% mutate(score = mFARS, dep = 'ICARS.sp' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(11,12)] )]) %>% gather(indep, value, scales.list[c(11,12)])
+  dt.w %>% mutate(dep.val = mFARS   , dep = 'mFARS' )    %>% select(-scales.list[!(scales.list %in% scales.list[c(1,3:4)] )]) %>% gather(ind, ind.val, scales.list[c(1,3:4)]),
+  dt.w %>% mutate(dep.val = SARA    , dep = 'SARA'  )    %>% select(-scales.list[!(scales.list %in% scales.list[c(2,4)]   )]) %>% gather(ind, ind.val, scales.list[c(2,4)]  ),
+  dt.w %>% mutate(dep.val = ICARS   , dep = 'ICARS' )    %>% select(-scales.list[!(scales.list %in% scales.list[c(2,3)]   )]) %>% gather(ind, ind.val, scales.list[c(2,3)]  ),
+  dt.w %>% mutate(dep.val = FARS.E  , dep = 'FARS.E'  )  %>% select(-scales.list[!(scales.list %in% scales.list[c(6,7)] )])   %>% gather(ind, ind.val, scales.list[c(6,7)]  ),
+  dt.w %>% mutate(dep.val = SARA.ax , dep = 'SARA.ax' )  %>% select(-scales.list[!(scales.list %in% scales.list[c(5,7)] )])   %>% gather(ind, ind.val, scales.list[c(5,7)]  ),
+  dt.w %>% mutate(dep.val = ICARS.ax, dep = 'ICARS.ax')  %>% select(-scales.list[!(scales.list %in% scales.list[c(5,6)] )])   %>% gather(ind, ind.val, scales.list[c(5,6)]  ),
+  dt.w %>% mutate(dep.val = FARS.BC , dep = 'FARS.BC' )  %>% select(-scales.list[!(scales.list %in% scales.list[c( 9,10)] )]) %>% gather(ind, ind.val, scales.list[c(9,10)] ),
+  dt.w %>% mutate(dep.val = SARA.ki , dep = 'SARA.ki' )  %>% select(-scales.list[!(scales.list %in% scales.list[c( 8,10)] )]) %>% gather(ind, ind.val, scales.list[c(8,10)] ),
+  dt.w %>% mutate(dep.val = ICARS.ki, dep = 'ICARS.ki')  %>% select(-scales.list[!(scales.list %in% scales.list[c( 8, 9)] )]) %>% gather(ind, ind.val, scales.list[c(8,9)]  ),
+  dt.w %>% mutate(dep.val = mFARS   , dep = 'FARS.Am'  ) %>% select(-scales.list[!(scales.list %in% scales.list[c(12,13)] )]) %>% gather(ind, ind.val, scales.list[c(12,13)]),
+  dt.w %>% mutate(dep.val = mFARS   , dep = 's4.speech') %>% select(-scales.list[!(scales.list %in% scales.list[c(11,13)] )]) %>% gather(ind, ind.val, scales.list[c(11,13)]),
+  dt.w %>% mutate(dep.val = mFARS   , dep = 'ICARS.sp' ) %>% select(-scales.list[!(scales.list %in% scales.list[c(11,12)] )]) %>% gather(ind, ind.val, scales.list[c(11,12)])
 ) 
 
-# add a split
+scores. %<>% 
+  ungroup %>% 
+  select( type, type2, study, sjid, avisitn, age, amb, fds, dep, ind, dep.val, ind.val)
 
-scores.amb <- scores. %>% 
-  filter( amb == 'ambulatory' ) %>% 
-  group_by( dep, indep ) %>% 
-  filter(  dep %in% scales.list[c(2,3,4,5,6,7)]) %>% 
-  filter(indep %in% scales.list[c(2,3,4,5,6,7)]) %>% 
-  # left_join(mx. %>% mutate(maxscore = maxscore*.5) %>% rename(indep = paramcd, split.val = maxscore)) %>%
-  # mutate ( split.val = case_when (
-  #   indep == 'SARA' ~ 9,
-  #   indep == 'ICARS', 23, 
-  #   indep == 'mFARS', 21,
-  #   indep == 'FARSn', 24, 
-  #   NA)) %>%
-  filter ( !is.na(value) ) %>% 
-  mutate ( split.val = median(value) ) %>% 
-  mutate ( split = ifelse(value < split.val, 'low','hig') )
+scores.    %>% 
+  saveRDS('DATA derived/scores.rds')
 
-scores.    %>% saveRDS('DATA derived/scores.rds')
-scores.amb %>% saveRDS('DATA derived/scores.amb.rds')
+# model and add predicted values ----------------------------------------------------
 
+lm.mod <- scores. %>% 
+  filter(type == 'pct', type2 == 'all') %>% 
+  # filter(dep == 'SARA.ax', ind == 'FARS.E') %>% 
+  group_by(type, type2, dep, ind) %>% 
+  filter (!is.na(ind.val), !is.na(dep.val)) %>% 
+  nest   () %>% 
+  mutate ( mod.lm = map( data  , ~ lm ( dep.val ~ ind.val, data = .))) %>% 
+  mutate ( mod.pl = map( data  , ~ lm ( dep.val ~ poly(ind.val,2), data = .))) %>% 
+  mutate ( pred.lm = map2( mod.lm, data, predict )) %>% 
+  mutate ( pred.pl = map2( mod.pl, data, predict ))
+
+lm.mod %>% 
+  saveRDS('DATA derived/models.predictions.rds')
