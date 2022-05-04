@@ -1,17 +1,24 @@
 
 rm(list = ls())
 
-scales.list <- c('mFARS'   ,'SARA'      ,'ICARS',
+scales.list <- c('FARSn',
+                 'mFARS'   ,'SARA'      ,'ICARS',
                  'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
                  'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
                  'FARS.Am' ,'s4.speech' ,'ICARS.sp',
                  'ICARS.od')
 
-dt.  <- readRDS('DATA derived/long.data.rds') %>% 
-  # filter(amb == 'ambulatory') %>%
-  filter( forslope == 1 )
+lm.mod <- readRDS('DATA derived/models.predictions.rds') %>% 
+  select( -mod.lm, -mod.pl ) %>% 
+  unnest( c(data, pred.lm, pred.pl )) %>% 
+  mutate( dep = factor(dep, scales.list)) %>%
+  mutate( ind = factor(ind, scales.list)) %>%
+  droplevels
+  
+with(lm.mod, table(dep, ind))
 
 scales <- .rt('../DATA other/scales.txt') %>% 
+  select(-pl2) %>% 
   filter(paramcd %in% scales.list) %>% 
   mutate(score = case_when(
     paramcd %in% scales.list[c(1,4,7,10)]     ~ 'mFARS',
@@ -31,31 +38,53 @@ scales <- .rt('../DATA other/scales.txt') %>%
     TRUE ~ 'Total Score'
   ))
 
+
+
+# correlate predictions ---------------------------------------------------
+
+lm.mod %>% 
+  ungroup %>% 
+  filter ( dep %in% c('FARS.E')) %>% 
+  filter ( ind %in% c('SARA.ax')) %>% 
+  ggplot()+geom_point()+
+  aes(x = pred.lm, y = ind.val)+
+  facet_grid( ind ~ dep )+
+  geom_abline (slope = 1)+
+  coord_cartesian(ylim = c(0,100), xlim = c(0,100))
+
+
 # . -----------------------------------------------------------------------
 
-dt <- dt. %>%
-  filter ( type == 'pct') %>% 
-  select ( study, sjid, avisitn, age, amb, paramcd, aval, fds = fds.act )
+scales.list[c(5:7)]
 
-# dt %>% 
-#   filter(paramcd %in% c('FARS.E', 'SARA.ax', 'ICARS.ax')) %>% 
-#   # filter(fds.act == 6)
-#   # ggplot()+geom_violin()+geom_jitter(width = .2)+
-#   ggplot()+geom_boxplot()+#geom_jitter(width = .2)+
-#   aes(x = factor(fds), y = aval)+
-#   aes(fill = paramcd)+
-#   facet_wrap(  ~ paramcd, scales = 'free_y' )
+lm.mod %<>% 
+  mutate(pred = pred.lm)
 
-tmp <- dt %>% 
-  left_join(scales %>% select(paramcd, score, score.type)) %>% 
-  # filter(score.type != 'kinetic function') %>% 
-  mutate(fds = ifelse(fds>5, 5, fds)) %>%
-  mutate(fds = ifelse(fds<1, 1, fds)) %>%
-  filter(fds > 0, fds < 6) %>% 
-  mutate(score.type = factor(score.type, c('kinetic function','axial function','Total Score'))) %>%
-  filter(!is.na(score.type)) %>%
-  mutate(score = factor(score, c('mFARS','SARA','ICARS'))) %>% 
-  filter(!is.na(paramcd))
+A <- lm.mod %>% 
+  filter( dep %in% scales.list[c(5:7)]) %>% 
+  filter( ind %in% scales.list[c(5:7)]) %>% 
+  bind_rows(
+    lm.mod %>%
+      filter( dep %in% scales.list[c(5:7)]) %>%
+      mutate( dep.val = pred) %>%
+      mutate( ind = dep )
+  ) %>%
+  filter(fds>0, fds<5) %>% 
+  ggplot()+geom_boxplot()+
+  aes( x    = factor(fds), y = pred )+
+  aes( fill = ind)+
+  # scale_x_continuous('dep')+scale_y_continuous('indep')+
+  facet_wrap(~dep)+
+  geom_hline(yintercept = 0, linetype = 'dotted')+
+  ggpubr::theme_pubclean()+
+  coord_cartesian(ylim = c(0,100))
+
+ggpubr::ggarrange( A, B, ncol = 2 )
+.sp(l = 'F')
+# predicted values --------------------------------------------------------
+
+tmp %>% 
+  group_by(paramcd, )
 
 # boxplot -----------------------------------------------------------------
 
@@ -73,7 +102,7 @@ p <- tmp %>%
   ylab('Percentage of Total')+
   .leg_tl
 
-ggsave('Figure 2 - Boxplots.png', plot = p, height = 13.5*.6, width = 13.5*.6)
+# ggsave('Figure 2 - Boxplots.png', plot = p, height = 13.5*.6, width = 13.5*.6)
 
 tmp %>% 
   filter(score.type != 'kinetic function') %>%
@@ -114,7 +143,7 @@ tmp %>%
     upper = .ci(aval)
     # lower = quantile(aval, probs = seq(0, 1, 0.25))[2],
     # upper = quantile(aval)[4]
-    ) %>% 
+  ) %>% 
   ggplot()+
   geom_pointrange(position = .dodge)+
   aes(ymin = lower, ymax = upper)+
