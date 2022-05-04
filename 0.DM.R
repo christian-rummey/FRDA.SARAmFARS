@@ -116,6 +116,12 @@ mx.    <- .rt('../DATA other/scales.txt') %>%
   filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
   mutate(paramcd = factor(paramcd, scales.list))
 
+
+dt. %>% 
+  filter ( type == 'pct', type2 == 'all' ) %>% 
+  select ( study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
+  saveRDS('DATA derived/dt.rds')
+
 dt.w <- dt. %>%
   select(-maxscore, -time.) %>% 
   spread(paramcd, aval) 
@@ -139,9 +145,6 @@ scores. %<>%
   ungroup %>% 
   select( type, type2, study, sjid, avisitn, age, amb, fds, dep, ind, dep.val, ind.val)
 
-scores.    %>% 
-  saveRDS('DATA derived/scores.rds')
-
 # model and add predicted values ----------------------------------------------------
 
 lm.mod <- scores. %>% 
@@ -157,3 +160,32 @@ lm.mod <- scores. %>%
 
 lm.mod %>% 
   saveRDS('DATA derived/models.predictions.rds')
+
+# once and for all --------------------------------------------------------
+
+scales <- .rt('../DATA other/scales.txt') %>% 
+  select(-pl2) %>% 
+  filter(paramcd %in% scales.list) %>% 
+  mutate(score = case_when(
+    paramcd %in% scales.list[c(1,2,5,8,11)]      ~ 'mFARS',
+    paramcd %in% scales.list[c(3,6,9,12)]        ~ 'SARA',
+    paramcd %in% scales.list[c(4,7,10,13,14)] ~ 'ICARS'
+  )) %>%
+  mutate(score.max = case_when(
+    score == 'mFARS' ~  93,
+    score == 'SARA'  ~  40,
+    score == 'ICARS' ~ 100
+  )) %>% 
+  mutate(score.type = case_when(
+    paramcd %in% scales.list[c(  5, 6, 7 )]  ~ 'Axial Function',
+    paramcd %in% scales.list[c(  8, 9, 10)]  ~ 'Kinetic Function',
+    paramcd %in% scales.list[c( 11,12, 13)]  ~ 'Speech Disorder',
+    paramcd %in% scales.list[c( 14       )]  ~ 'Oculomotor Disorder',
+    TRUE ~ 'Total Score'
+  ))
+
+with(scales, table (score.type, paramcd))
+with(scales, table (score  , score.type))
+with(scales, table (score  , paramcd   ))
+
+
