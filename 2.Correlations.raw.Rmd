@@ -99,15 +99,43 @@ coeffs. <- scores. %>%
   ungroup %>% 
   arrange( type, type2, dep, indep )
 
-coeffs.amb <- scores.amb %>% 
-  group_by(type, type2, dep, indep, split ) %>% 
+models.amb <- scores.amb %>% 
+  group_by(type, type2, dep, indep ) %>% 
   nest() %>% 
-  mutate ( lm.mod = map( data  , ~ lm (score ~ value, data = .))) %>% 
+  mutate ( lm.lin = map( data  , ~ lm (score ~       value     , data = .))) %>% 
+  mutate ( lm.squ = map( data  , ~ lm (score ~ poly (value, 2) , data = .))) %>% 
+  mutate ( predict = data$predict = 1)
+
+models.amb %>%
+  unnest( data ) %>%
+  mutate( predict = predict(., lm.lin))
+) %>% 
+  mutate( predict = map(lm.lin, ~ predict(.))) %>% 
+  unnest( predict )
+  mutate ( coef.lin   = map( lm.lin, ~ broom::tidy (.))) %>% 
+  mutate ( coef.squ   = map( lm.squ, ~ broom::tidy (.))) %>% 
+  # unnest ( coef.lin ) %>% 
+  unnest ( coef.squ ) %>% 
+  select ( type, type2, dep, indep, term, estimate ) %>% 
+  spread ( term, estimate ) %>% 
+  rename ( inter.2 = `(Intercept)`, x = `poly(value, 2)1`, x2 = `poly(value, 2)2` ) %>% 
+  mutate ( dep   = factor(dep  , scales.list )) %>% 
+  mutate ( indep = factor(indep, scales.list )) %>% 
+  ungroup %>% 
+  droplevels() %>% 
+  arrange( type, type2, dep, indep )
+
+coeffs.amb <- scores.amb %>% 
+  group_by(type, type2, dep, indep ) %>% 
+  nest() %>% 
+  mutate ( lm.mod = map( data  , ~ lm (score ~ poly (value, 2), data = .))) %>% 
+  # mutate ( pred   = map( lm.mod, ~ predict(.), data = .) ) %>% 
+  # unnest ( pred )
   mutate ( coef   = map( lm.mod, ~ broom::tidy (.))) %>% 
   unnest ( coef ) %>% 
-  select ( type, type2, dep, indep, split, term, estimate) %>% 
+  select ( type, type2, dep, indep, term, estimate ) %>% 
   spread ( term, estimate ) %>% 
-  rename ( inter = `(Intercept)`, slope = value ) %>% 
+  rename ( inter.2 = `(Intercept)`, x = `poly(value, 2)1`, x2 = `poly(value, 2)2` ) %>% 
   mutate ( dep   = factor(dep  , scales.list )) %>% 
   mutate ( indep = factor(indep, scales.list )) %>% 
   ungroup %>% 
@@ -115,7 +143,7 @@ coeffs.amb <- scores.amb %>%
   arrange( type, type2, dep, indep )
 
 coeffs. %>% 
-  bind_rows(coeffs.amb) %>% 
+  left_join(coeffs.amb) %>% 
   saveRDS('DATA derived/coefficients.rds')
 
 ```
