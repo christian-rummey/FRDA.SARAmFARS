@@ -65,8 +65,8 @@ G <- dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
 H <- dt. %>% my.cor.facet('SARA' ,  40, 'mFARS',  93 )
 I <- dt. %>% my.cor.facet('SARA' ,  40, 'ICARS', 100 )
 D <- dt. %>% my.cor.facet('ICARS.ax',  34, 'FARS.E'   , 36 )
-E <- dt. %>% my.cor.facet('SARA.ax' ,  20, 'FARS.E'   , 36 )
-F <- dt. %>% my.cor.facet('SARA.ax' ,  20, 'ICARS.ax' , 34 )
+E <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'FARS.E'   , 36 )
+F <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'ICARS.ax' , 34 )
 A <- dt. %>% my.cor.facet('ICARS.ki',  52, 'FARS.BC'  , 52 )
 B <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 )
 C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
@@ -74,7 +74,7 @@ C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
 p <- ggarrange(A, B, C, D, E, F, G, H, I, labels = c('A','B','C','D', 'E', 'F', 'G', 'H', 'I'), ncol = 3, nrow = 3)
 p
 
-# ggsave('Figure 3 - Correlations.png', plot = p, height = 13.5*.9, width = 13.5*.9)
+# ggsave('Figure 3 - Correlations PCT.png', plot = p, height = 13.5*.9, width = 13.5*.9)
 
 # . -----------------------------------------------------------------------
 

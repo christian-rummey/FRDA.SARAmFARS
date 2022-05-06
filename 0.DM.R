@@ -136,9 +136,6 @@ dt. %<>%
 dt. %<>%
   mutate(fds = ifelse(is.na(fds) & sjid == 4362, 2, fds)) 
 
-# dt. %>% # 4362, avis 6
-#   .wds('DATA derived/long.data')
-
 
 # correlated variables ----------------------------------------------------
 
@@ -148,8 +145,8 @@ mx.    <- .rt('../DATA other/scales.txt') %>%
 
 
 dt. %>% 
-  filter ( type == 'pct', type2 == 'all' ) %>% 
-  select ( study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
+  # filter ( type == 'pct', type2 == 'all' ) %>% 
+  select ( type, type2, study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
   saveRDS('DATA derived/dt.rds')
 
 dt.w <- dt. %>%
@@ -184,7 +181,7 @@ lm.mod <- scores. %>%
   filter (!is.na(ind.val), !is.na(dep.val)) %>% 
   nest   () %>% 
   mutate ( mod.lm = map( data  , ~ lm ( dep.val ~ ind.val, data = .))) %>% 
-  mutate ( mod.pl = map( data  , ~ lm ( dep.val ~ poly(ind.val,2), data = .))) %>% 
+  mutate ( mod.pl = map( data  , ~ lm ( dep.val ~ poly(ind.val,2, raw=TRUE), data = .))) %>% 
   mutate ( pred.lm = map2( mod.lm, data, predict )) %>% 
   mutate ( pred.pl = map2( mod.pl, data, predict ))
 
