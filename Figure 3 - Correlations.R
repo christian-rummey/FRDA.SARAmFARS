@@ -1,9 +1,10 @@
 
 # . -----------------------------------------------------------------------
 
-dt. <- readRDS('DATA derived/long.data.rds') %>%
-  filter ( type2 == 'all') %>% 
-  select ( study, sjid, avisitn, age, amb, paramcd, aval, fds )
+dt. <- readRDS('DATA derived/dt.rds') %>%
+  filter(type2 == 'all') %>% 
+  ungroup %>% 
+  select ( type, study, sjid, avisitn, age, amb, paramcd, aval)
 
 # normal ones -------------------------------------------------------------
 
@@ -28,7 +29,7 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     ungroup 
   
   dt..pct <- ds %>% 
-    filter(type == 'pct') %>% 
+    filter(type == 'pct') %>%
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
     filter(!is.na(!!x.par) & !is.na(!!y.par)) %>% 
@@ -39,7 +40,7 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     aes( x = !!x.par, y = !!y.par )+
     # stat_regline_equation(label.y = y.max*.80)+
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)))+
-    geom_smooth( formula = y ~ poly(x, 3), method = 'lm', color = 'blue')+
+    geom_smooth( formula = y ~ poly(x, 2), method = 'lm', color = 'blue')+
     geom_smooth( method = lm, color = 'red')+
     stat_regline_equation(label.y = y.max*.95, data = dt..pct)+
     stat_cor(label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct)+
