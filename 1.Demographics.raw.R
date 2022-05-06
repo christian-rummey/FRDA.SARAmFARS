@@ -27,7 +27,7 @@ dt. <- readRDS('DATA derived/long.data.rds')
 
 dt. %<>% 
   ungroup %>%
-  filter( forslope == 1) %>%
+  # filter( forslope == 1) %>%
   select( study, sjid, avisitn, age, amb) %>% 
   unique() %>% 
   ungroup 
@@ -57,8 +57,9 @@ dt.fu <- dt. %>%
 
 dt.fu %<>% 
   left_join(.dd.FA('demo') %>% select(sjid, site, sex, symp, diag, sev.o, gaa1, gaa2, pm, pm.grp)) %>% 
-  mutate( since.d = age.first-diag)
-
+  mutate( since.d = age.first-diag) %>% 
+  mutate( since.o = age.first-symp)  
+  
 dt.fu %<>% 
   mutate(no.fu = ifelse(fu==0, 1, 0)) %>% 
   mutate(pm = ifelse(pm == 0, 0, 1)) %>% 
@@ -84,6 +85,7 @@ var_label(dt.fu) <- list(sex    = 'Sex',
                       pm        = 'PMs (%)',
                       sev.o     = 'Severity Group', #-------------------
                       since.d   = 'Time since Diagnosis',
+                      since.o   = 'Disease Duration',
                       status    = 'Amb at Enrol.',
                       status.last  = 'Amb at Last Visit',
                       fu        = 'FU (years)',
@@ -94,7 +96,7 @@ var_label(dt.fu) <- list(sex    = 'Sex',
 )
 
 tb <- jstable::CreateTableOne2(
-  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','since.o','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   nonnormal  = c( 'symp','fu','fu.amb','fu.namb' ),
   strata     = c( 'sev.o' ),
@@ -105,7 +107,7 @@ tb <- jstable::CreateTableOne2(
   .ct
 
 tb <- tableone::CreateTableOne(
-  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
+  vars       = c( 'sex','age.first','symp','gaa1','gaa2','pm','since.d','since.o','status','status.last','fu','no.fu','fu.amb','fu.namb','age.last'),
   factorVars = c( 'pm', 'no.fu','status','status.last' ),
   strata     = c( 'sev.o' ),
   data       = dt.fu, 
@@ -114,7 +116,7 @@ tb <- tableone::CreateTableOne(
   )    
 
 tb %>% print(varLabels = T, 
-             nonnormal  = c( 'symp','gaa1' ,'gaa2','age,first','age.last','sinced','fu','fu.amb','fu.namb' , 'pm', 'since.d'),
+             nonnormal  = c( 'symp','gaa1' ,'gaa2','age,first','age.last','sinced','fu','fu.amb','fu.namb' , 'pm', 'since.d','since.o'),
              contDigits = 1, 
              catDigits = 0,
              missing = F,
