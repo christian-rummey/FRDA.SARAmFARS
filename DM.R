@@ -24,20 +24,16 @@ knitr::opts_chunk$set(warning  = F)
 
 rm(list = ls())
 
+steps. <- .dd.FA('steps')
+
+# once and for all --------------------------------------------------------
+
 scales.list <- c('FARSn',
                  'mFARS'   ,'SARA'      ,'ICARS',
                  'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
                  'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
                  'FARS.Am' ,'s4.speech' ,'ICARS.sp',
                  'ICARS.od')
-
-mx.    <- .rt('../DATA other/scales.txt') %>% 
-  filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
-  mutate(paramcd = factor(paramcd, scales.list))
-
-steps. <- .dd.FA('steps')
-
-# once and for all --------------------------------------------------------
 
 scales <- .rt('../DATA other/scales.txt') %>% 
   select(-pl2) %>% 
@@ -58,14 +54,13 @@ scales <- .rt('../DATA other/scales.txt') %>%
     paramcd %in% scales.list[c( 11,12, 13)]  ~ 'Speech Disorder',
     paramcd %in% scales.list[c( 14       )]  ~ 'Oculomotor Disorder',
     TRUE ~ 'Total Score'
-  ))
-
-with(scales, table (score.type, paramcd))
-with(scales, table (score  , score.type))
-with(scales, table (score  , paramcd   ))
+  )) %>% 
+  mutate(paramcd = factor(paramcd, scales.list))
 
 scales %>% 
   saveRDS('DATA derived/scales.rds')
+
+rm(scales.list)
 
 # data for progression ----------------------------------------------------
 
@@ -88,7 +83,7 @@ dt. <- .dd.FA('icars') %>% filter(study == 'FACOMS', paramcd == 'ICARS') %>% sel
   group_by(sjid, avisitn)
 
 dt. %<>% 
-  left_join(mx.)
+  left_join(scales %>% select(paramcd, maxscore))
 
 dt.pct <- dt. %>% 
   mutate(aval = 100*aval/maxscore) %>% 
@@ -131,18 +126,16 @@ dt. %<>%
 dt. %<>% 
   left_join(steps. %>% select(sjid, avisitn, fds = fds.act))
 
-# write -------------------------------------------------------------------
+# correct data ------------------------------------------------------------
 
 dt. %<>%
   mutate(fds = ifelse(is.na(fds) & sjid == 4362, 2, fds)) 
-
 
 # correlated variables ----------------------------------------------------
 
 mx.    <- .rt('../DATA other/scales.txt') %>% 
   filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
   mutate(paramcd = factor(paramcd, scales.list))
-
 
 dt. %>% 
   # filter ( type == 'pct', type2 == 'all' ) %>% 
