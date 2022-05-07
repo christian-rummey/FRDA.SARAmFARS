@@ -1,0 +1,87 @@
+---
+title: "Correlations ICARS/SARA/mFARS"
+author: "Christian Rummey"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: no
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+  markdown:
+    wrap: 100
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align='center', echo=F, warning=F, message=F, cache=F)
+
+```
+
+```{r prepare data, echo = F, message = F}
+
+rm(list=ls())
+
+scales.list <- c('FARSn',
+                 'mFARS'   ,'SARA'      ,'ICARS',
+                 'FARS.E'  ,'SARA.ax'   ,'ICARS.ax',
+                 'FARS.BC' ,'SARA.ki'   ,'ICARS.ki',
+                 'FARS.Am' ,'s4.speech' ,'ICARS.sp',
+                 'ICARS.od')
+
+mx.    <- .rt('../DATA other/scales.txt') %>% 
+  filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
+  mutate(paramcd = factor(paramcd, scales.list))
+
+scores. <- readRDS('DATA derived/models.predictions.rds')
+
+```
+
+```{r calculate coefficients, echo = F, message = F}
+
+coeffs. <- scores. %>%
+  select ( -data, -pred.lm, -pred.pl ) %>% 
+  gather ( type, model, mod.pl, mod.lm ) %>% 
+  mutate ( coef   = map( model, ~ broom::tidy (.))) %>% 
+  unnest ( coef ) %>% 
+  select ( type2, dep, ind, term, estimate) %>% 
+  mutate ( term = case_when(
+    term == '(Intercept)'       ~ 'inter',
+    term == 'ind.val'           ~ 'x'    ,
+    term == 'poly(ind.val, 2, raw = TRUE)1' ~ 'x'    ,
+    term == 'poly(ind.val, 2, raw = TRUE)2' ~ 'x2'
+    )) %>%
+  spread ( term, estimate ) %>% 
+  # rename ( inter = `(Intercept)`, slope = value ) %>% 
+  mutate ( dep   = factor(dep  , scales.list )) %>% 
+  mutate ( ind   = factor(ind  , scales.list )) %>% 
+  ungroup %>% 
+  arrange( type, type2, dep, ind )
+
+```
+
+```{r Supplementary Table}
+
+coeffs. %>%
+  select (-type, -type2) %>% 
+  filter ( dep %in% c('mFARS','SARA','SARA.ax','FARS.E') ) %>%
+  flextable() %>% 
+  colformat_double(digits = 2) %>% 
+  colformat_double(j = 5, digits = 4) %>% 
+  set_header_labels(values = list(dep = '', indep = 'predicted from', 
+                                  inter_val  = 'intercept',
+                                  slope_val  = 'slope',
+                                  inter_pct  = 'intercept',
+                                  slope_pct  = 'slope')) %>% 
+  # add_header_row(values = c('','Points','%'), colwidths = c(2, 2, 2)) %>% 
+  # align(j = c(1:6), part = 'all', align = 'center'  ) %>% 
+  # hline(i = c(1,seq(3,23,2))) %>% 
+  set_caption("Conversion Coefficients for full Scales",
+              autonum = run_autonum(seq_id = "tab", bkm = "full")) %>% 
+  set_table_properties( layout = "autofit" )
+
+
+```
