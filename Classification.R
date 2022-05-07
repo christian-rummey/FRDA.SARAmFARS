@@ -37,6 +37,59 @@ dt.  <- readRDS('DATA derived/models.predictions.rds') %>%
 
 df.fds <- dt. %>% ungroup %>% select(sjid, avisitn, fds) %>% unique
 
+edges.   <- c(  -40,      20,      40,      60, 80, 150)
+edges.l  <- c('<20', '21-40', '41-60', '61-80', '>80')
+edges.ln <- seq(1,5,1)
+
+dt. %>% 
+  filter( ind %in% c( 'FARS.E','SARA.ax','ICARS.ax' ), dep %in% c( 'FARS.E','SARA.ax' ) ) %>% 
+  # select( -c( dep.val, ind.val, pred.lm, pred.pl )) %>% 
+  select(-ind.val) %>% 
+  gather( type, score, pred.lm, pred.pl, dep.val ) %>% 
+  left_join(df.fds) %>% filter(fds > 0, fds<5) %>% 
+  ggplot( )+
+  aes (x = factor(fds), y = score)+
+  aes (fill = type)+
+  geom_boxplot()+
+  facet_grid(ind~dep)
+
+
+
+# classification table (doesn't work :-P) ---------------------------------
+
+df.fds <- dt. %>% ungroup %>% select(sjid, avisitn, fds) %>% unique
+
+edges.   <- c(  -40,      20,      40,      60, 80, 150)
+edges.l  <- c('<20', '21-40', '41-60', '61-80', '>80')
+edges.ln <- seq(1,5,1)
+
+dt. %>% 
+  filter( ind %in% c( 'FARS.E','SARA.ax','ICARS.ax' ), dep %in% c( 'FARS.E','SARA.ax','ICARS.ax' ) )%>% 
+  mutate( status.is = cut(dep.val, edges., edges.l) ) %>% 
+  mutate( status.lm = cut(pred.lm, edges., edges.l) ) %>% 
+  mutate( status.pl = cut(pred.pl, edges., edges.l) ) %>% 
+  select( -c( dep.val, ind.val, pred.lm, pred.pl )) %>% 
+  gather( type, status.pred, status.lm, status.pl) %>% 
+  mutate( status.pred = factor(status.pred, edges.l)) %>% 
+  group_by( dep, ind, type, status.is ) %>% 
+  mutate( N = n()) %>% 
+  mutate( 
+    prediction = case_when (
+      as.numeric( status.is ) == as.numeric( status.pred ) ~ '2 ok' ,
+      as.numeric( status.is ) >  as.numeric( status.pred ) ~ '1 low',
+      as.numeric( status.is ) <  as.numeric( status.pred ) ~ '3 high'
+      )
+  ) %>% 
+  group_by( dep, ind, type, status.is, prediction, N ) %>% 
+  summarise( pct = n() ) %>%
+  mutate   ( pct = round(pct*100/N,0 ) ) %>% 
+  arrange(type, status.is) %>% 
+  # ungroup %>% select(-status.pred, -N) %>%
+  spread(prediction, pct) %>% 
+  as.data.frame() %>% .ct
+  
+
+
 coeffs. <- readRDS('DATA derived/coefficients.rds') %>% 
   filter( !is.na(split) ) %>% 
   filter( type == 'pct', type2 == 'all') %>% 

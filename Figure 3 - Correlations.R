@@ -42,24 +42,23 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)))+
     geom_smooth( formula = y ~ poly(x, 2), method = 'lm', color = 'blue')+
     geom_smooth( method = lm, color = 'red')+
-    stat_regline_equation(label.y = y.max*.95, data = dt..pct)+
-    stat_cor(label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct)+
+    stat_regline_equation(label.x = x.max*.03, label.y = y.max*.95, data = dt..pct)+
+    stat_cor             (label.x = x.max*.03, label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct)+
     # geom_smooth(method = lm, color = 'green', linetype = 'dashed', data = dt..pct)+
     # stat_regline_equation(label.y = y.max*.80, data = dt..first)+
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)), data = dt..first)+
     # geom_smooth(method = lm, color = 'red', linetype = 'dashed', data = dt..first)+
     geom_abline(slope = y.max/x.max, linetype = 'dotted') +
     coord_cartesian( xlim = c(0,x.max), ylim = c(0,y.max) )+
+    geom_hline(yintercept = c(0,y.max), linetype = 'dotted')+
+    geom_vline(xintercept = c(0,x.max), linetype = 'dotted')+
     theme_pubclean()+
     .leg_none
 }
 
-# dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
-# dt. %>% my.cor.facet('SARA.ax', 18, 'FARS.E',  36 )
-# dt %>% my.cor.facet('ICARS.ax', 34/100, 'FARS.E',  36/100 )
-# dt %>% my.cor.facet('ICARS.od', 6, 's4.speech',  6 )
-# dt %>% my.cor.facet('ICARS.od', 6, 'FARS.Am',  5 )
-# dt %>% my.cor.facet('s4.speech', 6, 'FARS.Am',  5 )
+# dt. %>% my.cor.facet('ICARS.od', 6, 's4.speech',  6 )
+# dt. %>% my.cor.facet('ICARS.od', 6, 'FARS.Am',  5 )
+# dt. %>% my.cor.facet('s4.speech', 6, 'FARS.Am',  5 )
 
 G <- dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
 H <- dt. %>% my.cor.facet('SARA' ,  40, 'mFARS',  93 )
@@ -74,7 +73,7 @@ C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
 p <- ggarrange(A, B, C, D, E, F, G, H, I, labels = c('A','B','C','D', 'E', 'F', 'G', 'H', 'I'), ncol = 3, nrow = 3)
 p
 
-# ggsave('Figure 3 - Correlations PCT.png', plot = p, height = 13.5*.9, width = 13.5*.9)
+# ggsave('Figure 3 - Correlations.png', plot = p, height = 13.5*.9, width = 13.5*.9)
 
 # . -----------------------------------------------------------------------
 
