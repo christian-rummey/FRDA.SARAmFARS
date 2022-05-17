@@ -70,7 +70,7 @@ dt. <- bind_rows(
   .dd.FA('fars.slope.chg')
   ) %>% 
   filter(study == 'FACOMS') %>% 
-  mutate(paramcd = factor(paramcd, scales.list)) %>% 
+  mutate(paramcd = factor(paramcd, levels(scales$paramcd))) %>% 
   filter(!is.na(paramcd)) %>% 
   select(-c('fpf', 'hpf', 'bl', 'bl.age','adt', 'neuro.score', 'dev.y')) %>% 
   filter( forslope == 1 ) %>% #basta
@@ -134,17 +134,20 @@ dt. %<>%
 # correlated variables ----------------------------------------------------
 
 mx.    <- .rt('../DATA other/scales.txt') %>% 
-  filter(paramcd %in% scales.list) %>% select(paramcd, maxscore) %>% 
-  mutate(paramcd = factor(paramcd, scales.list))
+  filter(paramcd %in% levels(dt.$paramcd)) %>% select(paramcd, maxscore) %>% 
+  mutate(paramcd = factor(paramcd, levels(dt.$paramcd)))
 
 dt. %>% 
   # filter ( type == 'pct', type2 == 'all' ) %>% 
+  filter ( type2 == 'all' ) %>%
   select ( type, type2, study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
   saveRDS('DATA derived/dt.rds')
 
 dt.w <- dt. %>%
   select(-maxscore, -time.) %>% 
   spread(paramcd, aval) 
+
+scales.list <- levels(dt.$paramcd)
 
 scores. <- bind_rows(
   dt.w %>% mutate(dep.val = mFARS   , dep = 'mFARS' )    %>% select(-scales.list[!(scales.list %in% scales.list[c(1,3:4)] )]) %>% gather(ind, ind.val, scales.list[c(1,3:4)]),
@@ -168,8 +171,8 @@ scores. %<>%
 # model and add predicted values ----------------------------------------------------
 
 lm.mod <- scores. %>% 
-  filter(type == 'pct', type2 == 'all') %>% 
-  # filter(dep == 'SARA.ax', ind == 'FARS.E') %>% 
+  # filter(type == 'pct', type2 == 'all') %>% 
+  filter(               type2 == 'all') %>% 
   group_by(type, type2, dep, ind) %>% 
   filter (!is.na(ind.val), !is.na(dep.val)) %>% 
   nest   () %>% 
