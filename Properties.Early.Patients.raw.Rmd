@@ -1,0 +1,208 @@
+---
+title: "Progression in mFARS/SARA/ICARS"
+author: "Christian Rummey"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: no
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+  markdown:
+    wrap: 100
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=6, fig.align='center', echo=F, warning=F, message=F, cache=F)
+
+dt. <- readRDS('DATA derived/dt.rds') %>% 
+  filter ( type == 'val') %>% 
+  # filter(forslope == 1) %>% 
+  # filter(paramcd == 'SARA') %>% 
+  select ( sjid, avisitn, age, paramcd, aval) %>% 
+  filter ( paramcd %in% c('mFARS','SARA', 'FARS.E', 'SARA.ax')) %>% 
+  spread ( paramcd, aval) 
+
+
+```
+
+# Table of early subjects ( fane3b or fane4 < 4), Sort by mFARS
+
+```{r}
+
+# select anyone with 3B, 4, 5 
+
+dt <- dt. %>% 
+  ungroup %>% 
+  # select(sjid, avisitn, SARA.ax, FARS.E, age) %>% 
+  left_join(.dd.FA('fars.w') %>% select(sjid, avisitn, .l.FARS.E)) %>%
+  left_join(.dd.FA('sara.w') %>% select(sjid, avisitn, .l.sara.ax)) %>%
+  select(sjid, age, FARS.E, SARA.ax, .l.FARS.E, age, -fane1, -fane7, .l.sara.ax) %>% 
+  filter(fane4<4 | fane5<4 | fane3b<4)
+# j = ~ . -time,
+
+
+colourer.stance <- scales::col_numeric(
+  palette = c("transparent", "#31a354"),
+  domain = c(0, 4))
+
+colourer.FARS.E <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 36))
+
+colourer.SARA <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 18))
+
+colourer.SARA.it <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 8))
+
+dt %>% 
+  # left_join(.dd.FA('demo') %>% select(sjid, sev.o)) %>% 
+  mutate(age=round(age)) %>% 
+  # select(mFARS, SARA, fane1, fane6, fane7, fane2a, fane3a, fane2b, fane3b, fane4, fane5, age, sev.o) %>% 
+  # select(mFARS, SARA, fane1, fane6, fane7, fane2a, fane3a, fane2b, fane3b, fane4, fane5, age, sev.o) %>% 
+  arrange(FARS.E, SARA.ax) %>% 
+  qflextable() %>% 
+  bg(bg = colourer.stance , j = seq(5,11,1), part = "body") %>%
+  bg(bg = colourer.FARS.E , j = 3          , part = "body") %>%
+  bg(bg = colourer.SARA   , j = 4          , part = "body") %>%
+  bg(bg = colourer.SARA.it, j = c(12,13,14), part = "body") %>%
+  vline(j = c(2,5,7,9,11), border = fp_border_default()) %>% 
+  hline(i = c(20), border = fp_border_default()) %>% 
+  fit_to_width(6, inc = 1L, max_iter = 20, unit = "in")
+
+```
+
+# Table of early subjects ( mFARS < 30 ), Sort by mFARS
+
+```{r}
+
+# select anyone below mFARS 25
+
+dt <- dt. %>% 
+  ungroup %>% 
+  # select(sjid, avisitn, SARA.ax, FARS.E, age) %>% 
+  left_join(.dd.FA('fars.w') %>% select(sjid, avisitn, .l.FARS.E)) %>%
+  left_join(.dd.FA('sara.w') %>% select(sjid, avisitn, .l.sara.ax)) %>%
+  select(sjid, age, FARS.E, SARA.ax, .l.FARS.E, age, -fane1, -fane7, .l.sara.ax) %>% 
+  filter(FARS.E <= 25)
+# j = ~ . -time,
+
+
+colourer.stance <- scales::col_numeric(
+  palette = c("transparent", "#31a354"),
+  domain = c(0, 4))
+
+colourer.FARS.E <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 36))
+
+colourer.SARA <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 18))
+
+colourer.SARA.it <- scales::col_numeric(
+  palette = c("transparent", "#3182bd"),
+  domain = c(0, 8))
+
+dt %>% 
+  # left_join(.dd.FA('demo') %>% select(sjid, sev.o)) %>% 
+  mutate(age=round(age)) %>% 
+  # select(mFARS, SARA, fane1, fane6, fane7, fane2a, fane3a, fane2b, fane3b, fane4, fane5, age, sev.o) %>% 
+  # select(mFARS, SARA, fane1, fane6, fane7, fane2a, fane3a, fane2b, fane3b, fane4, fane5, age, sev.o) %>% 
+  arrange(FARS.E, SARA.ax) %>% 
+  qflextable() %>% 
+  bg(bg = colourer.stance , j = seq(5,11,1), part = "body") %>%
+  bg(bg = colourer.FARS.E , j = 3          , part = "body") %>%
+  bg(bg = colourer.SARA   , j = 4          , part = "body") %>%
+  bg(bg = colourer.SARA.it, j = c(12,13,14), part = "body") %>%
+  vline(j = c(2,5,7,9,11), border = fp_border_default()) %>% 
+  hline(i = c(20), border = fp_border_default()) %>% 
+  fit_to_width(6, inc = 1L, max_iter = 20, unit = "in")
+
+```
+
+
+# Correlation only stance functions
+
+```{r}
+
+dt <- dt. %>% 
+  ungroup %>% 
+  # select(sjid, avisitn, SARA.ax, FARS.E, age) %>% 
+  left_join(.dd.FA('fars.w') %>% select(sjid, avisitn, .l.FARS.E)) %>%
+  left_join(.dd.FA('sara.w') %>% select(sjid, avisitn, .l.sara.ax)) %>%
+  mutate(FARS.stance = rowSums(.[c('fane2a', 'fane2b','fane3a','fane3b','fane4','fane5')]) ) %>% 
+  mutate(FARS.gait = rowSums(.[c('fane7', 'fane6')]) ) %>% 
+  left_join(.dd.FA('steps') %>% select(sjid, avisitn, step.act)) %>% 
+  select(sjid, age, FARS.E, SARA.ax, s2.stance, FARS.stance, FARS.gait, s1.gait, step.act) %>% 
+  filter(!is.na(step.act))
+
+dt %<>% 
+  mutate(step.act = ifelse(step.act == '010|0', '000|0', step.act)) %>% 
+  mutate(step.act = ifelse(step.act == '110|1', '111|1', step.act)) 
+
+A <- dt %>% 
+  ggplot()+geom_jitter(width = 0.2, height = 0.2)+
+  aes(x = s2.stance, y = FARS.stance)+
+  aes(color = step.act)+
+  facet_wrap(~step.act)+
+  .leg_none
+
+B <- dt %>% 
+  ggplot()+geom_jitter(width = 0.2, height = 0.2)+
+  aes(x = s1.gait, y = FARS.stance)+
+  aes(color = step.act)+
+  facet_wrap(~step.act)+
+  .leg_lr
+
+C <- dt %>% 
+  ggplot()+geom_jitter(width = 0.2, height = 0.2)+
+  aes(x = s2.stance, y = FARS.gait)+
+  aes(color = step.act)+
+  facet_wrap(~step.act)+
+  .leg_none
+
+D <- dt %>% 
+  ggplot()+geom_jitter(width = 0.2, height = 0.2)+
+  aes(x = s1.gait, y = FARS.gait)+
+  aes(color = step.act)+
+  facet_wrap(~step.act)+
+  .leg_lr
+
+ggarrange(A, B, C, D)
+
+
+```
+
+# Are there two paths of decline? 
+
+```{r}
+
+p <- .dd.FA('fars.w') %>%
+  .add.time() %>% 
+  # filter(age<1) %>% 
+  left_join(.dd.FA('demo.l') %>% select(sjid, sev.o)) %>% 
+  select(study, sjid, age, sev.o, avisitn, fane4, fane3b) %>% 
+  # mutate(x = fane3b) %>% 
+  # mutate(y = fane4) %>% 
+  filter( fane3b < 4 | fane4 < 4 ) %>%
+  # filter( fane3b > 0 | fane4 > 0 ) %>%
+  mutate( age.grp = cut(age, c(-1,8,12,16,25,40,100), labels = c('<8y', '8-11y', '12-15y', '16-24y','25-40y', '>40y' ), right = T)) %>%
+  # mutate( dur.grp = cut(age, seq(0,20,5)) ) %>% 
+  ggplot()+geom_jitter(width = .1)+
+  aes(x = fane3b, y = fane4)
+
+ggExtra::ggMarginal(p, type = 'densigram')
+
+```
+
+
+
+
