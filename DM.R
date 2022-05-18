@@ -50,7 +50,7 @@ scales <- .rt('../DATA other/scales.txt') %>%
   )) %>% 
   mutate(score.type = case_when(
     paramcd %in% scales.list[c(  5, 6, 7 )]  ~ 'Axial Function',
-    paramcd %in% scales.list[c(  8, 9, 10)]  ~ 'Kinetic Function',
+    paramcd %in% scales.list[c(  8, 9, 10)]  ~ 'Appendicular Function',
     paramcd %in% scales.list[c( 11,12, 13)]  ~ 'Speech Disorder',
     paramcd %in% scales.list[c( 14       )]  ~ 'Oculomotor Disorder',
     TRUE ~ 'Total Score'
