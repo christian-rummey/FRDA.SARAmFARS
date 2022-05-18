@@ -58,7 +58,7 @@ scales <- .rt('../DATA other/scales.txt') %>%
   mutate(paramcd = factor(paramcd, scales.list))
 
 scales %>% 
-  saveRDS('DATA derived/scales.rds')
+  .wds('DATA derived/scales')
 
 rm(scales.list)
 
@@ -72,9 +72,9 @@ dt. <- bind_rows(
   filter(study == 'FACOMS') %>% 
   mutate(paramcd = factor(paramcd, levels(scales$paramcd))) %>% 
   filter(!is.na(paramcd)) %>% 
-  select(-c('fpf', 'hpf', 'bl', 'bl.age','adt', 'neuro.score', 'dev.y')) %>% 
-  filter( forslope == 1 ) %>% #basta
-  select(-c(int, chg, forslope)) %>% 
+  select(-c('fpf', 'hpf', 'bl', 'bl.age','adt', 'neuro.score', 'dev.y')) %>%
+  # filter( forslope == 1 ) %>% #basta
+  # select(-c(int, chg, forslope)) %>% 
   group_by(sjid, avisitn, paramcd) %>% 
   droplevels() 
 
@@ -86,11 +86,12 @@ dt. %<>%
   left_join(scales %>% select(paramcd, maxscore))
 
 dt.pct <- dt. %>% 
-  mutate(aval = 100*aval/maxscore) %>% 
-  mutate(type = 'pct')
+  mutate( aval = 100*aval/maxscore ) %>% 
+  mutate( chg  = 100*chg /maxscore ) %>% 
+  mutate( type = 'pct' )
 
 dt. %<>% 
-  mutate(type = 'val') %>% 
+  mutate( type = 'val' ) %>% 
   bind_rows(dt.pct)
 
 rm(dt.pct)
@@ -138,10 +139,19 @@ mx.    <- .rt('../DATA other/scales.txt') %>%
   mutate(paramcd = factor(paramcd, levels(dt.$paramcd)))
 
 dt. %>% 
+  filter ( type2 == 'all' ) %>%
+  select ( type, type2, study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
+  .wds('DATA derived/dt.chg')
+
+dt. %<>% 
+  filter ( forslope == 1 ) %>% # none-basta
+  select ( -c(int, chg, forslope)  )
+
+dt. %>% 
   # filter ( type == 'pct', type2 == 'all' ) %>% 
   filter ( type2 == 'all' ) %>%
   select ( type, type2, study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
-  saveRDS('DATA derived/dt.rds')
+  .wds('DATA derived/dt')
 
 dt.w <- dt. %>%
   select(-maxscore, -time.) %>% 
