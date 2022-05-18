@@ -140,7 +140,7 @@ mx.    <- .rt('../DATA other/scales.txt') %>%
 
 dt. %>% 
   filter ( type2 == 'all' ) %>%
-  select ( type, type2, study, sjid, avisitn, age, paramcd, aval, amb, fds ) %>% 
+  select ( type, type2, study, sjid, avisitn, age, paramcd, aval, int, chg, amb, fds ) %>% 
   .wds('DATA derived/dt.chg')
 
 dt. %<>% 

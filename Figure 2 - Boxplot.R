@@ -14,6 +14,8 @@ dt. <- readRDS('DATA derived/dt.rds') %>%
 
 # . -----------------------------------------------------------------------
 
+base.size <- 10 
+
 tmp <- dt. %>% 
   left_join(
     scales %>% select(paramcd, score, score.type)
@@ -31,7 +33,7 @@ A <- tmp %>%
   scale_fill_manual(values = c("#2ca25f", "#E7B800", "#FC4E07"))+
   facet_wrap(~score.type, ncol = 2)+
   geom_hline(yintercept = c(0,50, 100), linetype = 'dotted')+
-  ggpubr::theme_pubclean(base_size = 22)+
+  ggpubr::theme_pubclean(base_size = base.size)+
   coord_cartesian(ylim = c(0,100))+
   theme(legend.title = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
 
@@ -43,7 +45,7 @@ B <- tmp %>%
   scale_fill_manual(values = c("#2ca25f", "#E7B800", "#FC4E07"))+
   facet_wrap(~score.type, ncol = 2)+
   geom_hline(yintercept = c(0,50, 100), linetype = 'dotted')+
-  ggpubr::theme_pubclean(base_size = 22)+
+  ggpubr::theme_pubclean(base_size = base.size)+
   coord_cartesian(ylim = c(0,100))+
   theme(legend.title = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
 
@@ -55,12 +57,13 @@ C <- tmp %>%
   scale_fill_manual(values = c("#2ca25f", "#E7B800", "#FC4E07"))+
   facet_wrap(~score.type, ncol = 2)+
   geom_hline(yintercept = c(0,50, 100), linetype = 'dotted')+
-  ggpubr::theme_pubclean(base_size = 22)+
+  ggpubr::theme_pubclean(base_size = base.size)+
   coord_cartesian(ylim = c(0,100))+
   theme(legend.title = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
 
 
-p <- ggarrange( A, B, labels = c('A','B' ), ncol = 2, nrow = 1, common.legend = T)
+p <- ggarrange( A, B, C, labels = c('A','B','C' ), ncol = 2, nrow = 2, common.legend = T)+.leg_lr
 p <- annotate_figure(p, left = 'Percentualized Score', bottom = 'Functional Disease Stage')
 
-# .sp(l = 'F', ti ='Figure 2 - Boxplots' )
+# .sp(l = 'TTE', ti ='Figure 2 - Boxplots' )
+
