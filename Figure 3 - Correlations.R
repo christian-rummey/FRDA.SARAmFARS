@@ -13,15 +13,18 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
   x.par <- ensym(x.par)
   y.par <- ensym(y.par)
   
+  x.max <- 100
+  y.max <- 100
+  
   dt.. <- ds %>% 
-    filter(type == 'val') %>% 
+    filter(type == 'pct') %>% 
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
     filter(!is.na(!!x.par) & !is.na(!!y.par)) %>% 
     ungroup 
   
   dt..first <- ds %>% 
-    filter(type == 'val') %>% 
+    filter(type == 'pct') %>% 
     group_by(sjid) %>% filter(avisitn == min(avisitn)) %>%
     filter(paramcd %in% c(x.par, y.par)) %>% 
     spread(paramcd, aval) %>%
@@ -43,7 +46,7 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     geom_smooth( formula = y ~ poly(x, 2), method = 'lm', color = 'blue')+
     geom_smooth( method = lm, color = 'red')+
     stat_regline_equation(label.x = x.max*.03, label.y = y.max*.95, data = dt..pct)+
-    stat_cor             (label.x = x.max*.03, label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct)+
+    stat_cor             (label.x = x.max*.03, label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct, r.digits = 2)+
     # geom_smooth(method = lm, color = 'green', linetype = 'dashed', data = dt..pct)+
     # stat_regline_equation(label.y = y.max*.80, data = dt..first)+
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)), data = dt..first)+
@@ -63,12 +66,12 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
 G <- dt. %>% my.cor.facet('ICARS', 100, 'mFARS',  93 )
 H <- dt. %>% my.cor.facet('SARA' ,  40, 'mFARS',  93 )
 I <- dt. %>% my.cor.facet('SARA' ,  40, 'ICARS', 100 )
-D <- dt. %>% my.cor.facet('ICARS.ax',  34, 'FARS.E'   , 36 )
-E <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'FARS.E'   , 36 )
-F <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'ICARS.ax' , 34 )
-A <- dt. %>% my.cor.facet('ICARS.ki',  52, 'FARS.BC'  , 52 )
-B <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 )
-C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 )
+D <- dt. %>% my.cor.facet('ICARS.ax',  34, 'FARS.E'   , 36 ) + xlab('ICARS, axial') + ylab('mFARS, axial')
+E <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'FARS.E'   , 36 ) + xlab('SARA, axial') + ylab('mFARS, axial')
+F <- dt. %>% my.cor.facet('SARA.ax' ,  18, 'ICARS.ax' , 34 ) + xlab('SARA, axial') + ylab('ICARS, axial')
+A <- dt. %>% my.cor.facet('ICARS.ki',  52, 'FARS.BC'  , 52 ) + xlab('ICARS, appendicular') + ylab('mFARS, appendicular')
+B <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 ) + xlab('SARA, appendicular') + ylab('mFARS, appendicular')
+C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 ) + xlab('SARA, appendicular') + ylab('ICARS, appendicular')
 
 p <- ggarrange(A, B, C, D, E, F, G, H, I, labels = c('A','B','C','D', 'E', 'F', 'G', 'H', 'I'), ncol = 3, nrow = 3)
 p

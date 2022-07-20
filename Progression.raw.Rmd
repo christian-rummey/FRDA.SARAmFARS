@@ -11,7 +11,7 @@ output:
     df_print: paged
     number_sections: yes
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
   markdown:
     wrap: 100
 ---
@@ -28,8 +28,9 @@ parlist <- c('mFARS','SARA','ICARS','FARS.E','SARA.ax','ICARS.ax','FARS.BC','SAR
 age.grps  <-  c(0,8,12,16,25,40,100)
 age.lbls <- c('<8y', '8-11y', '12-15y', '16-24y', '25-40y', '>40y' )
 
-dt. <- readRDS('DATA derived/long.data.rds') %>% 
+dt. <- readRDS('DATA derived/dt.chg.rds') %>% 
   mutate(paramcd = factor(paramcd, parlist)) %>% 
+  filter(!is.na(paramcd)) %>% 
   # filter(forslope == 1) %>% 
   # select(-c('forslope', 'int', 'chg', 'dev.y')) %>% 
   droplevels()
@@ -56,43 +57,43 @@ dt. %<>%
 
 scores.list <- c('mFARS','SARA','ICARS')
 
-tmp.A <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  mutate ( chg = 100*chg/maxscore, aval = 100*aval/maxscore ) %>%
+tmp.pct <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'pct') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-tmp.B <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  # mutate ( chg = chg/maxscore, aval = aval/maxscore ) %>%
+tmp.val <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'val') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-label.y.A <- -max(tmp.A$m)*.1
-label.y.B <- -max(tmp.B$m)*.1
+label.y.pct <- -max(tmp.pct$m)*.1
+label.y.val <- -max(tmp.val$m)*.1
 
-A <- tmp.B %>% 
+A <- tmp.val %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.B), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.pct), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_tr+
   ggtitle('Changes in Total Scores (absolute)')+
   ylab('Mean Change')+
   xlab('Age Group')
 
-B <- tmp.A %>% 
+B <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.A), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.pct), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_none+
   ggtitle('Changes in Total Scores (percentage)')+
@@ -100,7 +101,7 @@ B <- tmp.A %>%
   xlab('Age Group')
 
 
-C <- tmp.A %>% 
+C <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = SRM)+
   aes(fill = paramcd)+
@@ -123,43 +124,43 @@ C + coord_cartesian(ylim = c(-.1, 1.2))
 
 scores.list <- c('FARS.E','SARA.ax','ICARS.ax')
 
-tmp.A <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  mutate ( chg = 100*chg/maxscore, aval = 100*aval/maxscore ) %>%
+tmp.pct <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'pct') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-tmp.B <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  # mutate ( chg = chg/maxscore, aval = aval/maxscore ) %>%
+tmp.val <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'val') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-label.y.A <- -max(tmp.A$m)*.1
-label.y.B <- -max(tmp.B$m)*.1
+label.y.pct <- -max(tmp.pct$m)*.1
+label.y.val <- -max(tmp.val$m)*.1
 
-A <- tmp.B %>% 
+A <- tmp.val %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.B), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.val), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_tr+
   ggtitle('Changes in Total Scores (absolute)')+
   ylab('Mean Change')+
   xlab('Age Group')
 
-B <- tmp.A %>% 
+B <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.A), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.pct), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_none+
   ggtitle('Changes in Total Scores (percentage)')+
@@ -167,7 +168,7 @@ B <- tmp.A %>%
   xlab('Age Group')
 
 
-C <- tmp.A %>% 
+C <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = SRM)+
   aes(fill = paramcd)+
@@ -177,7 +178,6 @@ C <- tmp.A %>%
   ggtitle('SRMs')+
   xlab('SRM')+
   xlab('Age Group')
-
 
 A
 B + coord_cartesian(ylim = c(  0,  20))
@@ -192,43 +192,43 @@ C + coord_cartesian(ylim = c(-.1, 1.2))
 
 scores.list <- c('FARS.BC','SARA.ki','ICARS.ki')
 
-tmp.A <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  mutate ( chg = 100*chg/maxscore, aval = 100*aval/maxscore ) %>%
+tmp.pct <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'pct') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-tmp.B <- dt. %>% 
-  filter ( !is.na(int) ) %>% 
-  filter ( int == '1y' ) %>% 
-  # mutate ( chg = chg/maxscore, aval = aval/maxscore ) %>%
+tmp.val <- dt. %>% 
+  filter ( !is.na( int )) %>% 
+  filter ( type == 'val') %>% 
+  filter ( int  == '1y' ) %>% 
   group_by(paramcd, age.grp, amb, int ) %>% 
   filter ( paramcd %in% scores.list ) %>%
   summarise(n = n(), m = mean(chg), sd = sd(chg), SRM = m/sd) 
 
-label.y.A <- -max(tmp.A$m)*.1
-label.y.B <- -max(tmp.B$m)*.1
+label.y.pct <- -max(tmp.pct$m)*.1
+label.y.val <- -max(tmp.val$m)*.1
 
-A <- tmp.B %>% 
+A <- tmp.val %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.B), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.val), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_tr+
   ggtitle('Changes in Total Scores (absolute)')+
   ylab('Mean Change')+
   xlab('Age Group')
 
-B <- tmp.A %>% 
+B <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = m)+
   aes(fill = paramcd)+
   facet_grid(.~amb)+
-  geom_text(aes(label=n, y = label.y.A), position = position_dodge(width = .6), size = 2)+
+  geom_text(aes(label=n, y = label.y.pct), position = position_dodge(width = .6), size = 2)+
   geom_hline(yintercept = 0, linetype = 'dotted')+
   .leg_none+
   ggtitle('Changes in Total Scores (percentage)')+
@@ -236,7 +236,7 @@ B <- tmp.A %>%
   xlab('Age Group')
 
 
-C <- tmp.A %>% 
+C <- tmp.pct %>% 
   ggplot()+geom_col(position = position_dodge(width = .6), alpha = .8)+
   aes(x = age.grp, y = SRM)+
   aes(fill = paramcd)+
@@ -246,7 +246,6 @@ C <- tmp.A %>%
   ggtitle('SRMs')+
   xlab('SRM')+
   xlab('Age Group')
-
 
 A
 B + coord_cartesian(ylim = c(  0,  20))
