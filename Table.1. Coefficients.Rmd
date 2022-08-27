@@ -44,10 +44,10 @@ scores. <- readRDS('DATA derived/models.predictions.rds')
 
 coeffs. <- scores. %>%
   select ( -data, -pred.lm, -pred.pl ) %>% 
-  gather ( type, model, mod.pl, mod.lm ) %>% 
+  gather ( type3, model, mod.pl, mod.lm ) %>% 
   mutate ( coef   = map( model, ~ broom::tidy (.))) %>% 
   unnest ( coef ) %>% 
-  select ( type2, dep, ind, term, estimate) %>% 
+  select ( type3, type2, type, dep, ind, term, estimate) %>% 
   mutate ( term = case_when(
     term == '(Intercept)'       ~ 'inter',
     term == 'ind.val'           ~ 'x'    ,
@@ -59,15 +59,17 @@ coeffs. <- scores. %>%
   mutate ( dep   = factor(dep  , scales.list )) %>% 
   mutate ( ind   = factor(ind  , scales.list )) %>% 
   ungroup %>% 
-  arrange( type, type2, dep, ind )
+  arrange( type, type3, dep, ind )
 
 ```
 
-```{r Supplementary Table}
+```{r Table 1}
 
-coeffs. %>%
-  select (-type, -type2) %>% 
-  filter ( dep %in% c('mFARS','SARA','SARA.ax','FARS.E') ) %>%
+coeffs. %>% 
+  select(-type2) %>% 
+  filter ( dep %in% c('mFARS','SARA','ICARS','SARA.ax','FARS.E','ICARS.ax') ) %>%
+  pivot_wider ( id_cols = c('dep','ind'), names_from = c('type3','type'), values_from = c('inter', 'x','x2')) %>% 
+  select(dep, ind, inter_mod.lm_val, x_mod.lm_val, inter_mod.lm_pct, x_mod.lm_pct, inter_mod.pl_pct, x_mod.pl_pct, x2_mod.pl_pct) %>% 
   flextable() %>% 
   colformat_double(digits = 2) %>% 
   colformat_double(j = 5, digits = 4) %>% 
