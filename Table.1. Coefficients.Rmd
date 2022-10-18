@@ -70,14 +70,19 @@ coeffs. %>%
   filter ( dep %in% c('mFARS','SARA','ICARS','SARA.ax','FARS.E','ICARS.ax') ) %>%
   pivot_wider ( id_cols = c('dep','ind'), names_from = c('type3','type'), values_from = c('inter', 'x','x2')) %>% 
   select(dep, ind, inter_mod.lm_val, x_mod.lm_val, inter_mod.lm_pct, x_mod.lm_pct, inter_mod.pl_pct, x_mod.pl_pct, x2_mod.pl_pct) %>% 
+  mutate_at(vars(inter_mod.lm_val, x_mod.lm_val, inter_mod.lm_pct, x_mod.lm_pct, inter_mod.pl_pct, x_mod.pl_pct), round,2) %>% 
+  mutate_at(vars(x2_mod.pl_pct), round,4) %>% 
   flextable() %>% 
-  colformat_double(digits = 2) %>% 
-  colformat_double(j = 5, digits = 4) %>% 
-  set_header_labels(values = list(dep = '', indep = 'predicted from', 
-                                  inter_val  = 'intercept',
-                                  slope_val  = 'slope',
-                                  inter_pct  = 'intercept',
-                                  slope_pct  = 'slope')) %>% 
+  # colformat_double(digits = 2) %>% 
+  # colformat_double(j = 9, digits = 4) %>% 
+  set_header_labels(values = list(dep = 'Score', ind = 'predicted from', 
+                                  inter_mod.lm_val   = 'intercept',
+                                  x_mod.lm_val       = 'slope',
+                                  inter_mod.lm_pct   = 'intercept',
+                                  x_mod.lm_pct       = 'slope',
+                                  inter_mod.pl_pct   = 'intercept',
+                                  x_mod.pl_pct       = 'x',
+                                  x2_mod.pl_pct      = 'x2')) %>% 
   # add_header_row(values = c('','Points','%'), colwidths = c(2, 2, 2)) %>% 
   # align(j = c(1:6), part = 'all', align = 'center'  ) %>% 
   # hline(i = c(1,seq(3,23,2))) %>% 
