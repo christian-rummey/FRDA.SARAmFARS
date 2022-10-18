@@ -36,7 +36,6 @@ dt %<>%
 
 dt %>% 
   filter( amb == 'ambulatory') %>% 
-  # filter(sjid == 4212, avisitn == 4) %>%
   left_join(scales %>% select(ind = paramcd, score.ind = score, score.type.ind = score.type)) %>% 
   left_join(scales %>% select(dep = paramcd, score.dep = score, score.type.dep = score.type)) %>% 
   select(dep, sjid, avisitn, amb, type, value, ind, score.dep, score.ind, score.type.dep, score.type.ind) %>%
@@ -46,20 +45,15 @@ dt %>%
   unique %>% 
   mutate( score.ind  = factor(score.ind , c( 'mFARS','SARA','ICARS' ) ) ) %>%
   mutate( score.dep  = factor(score.dep , c( 'mFARS','SARA','ICARS' ) ) ) %>%
-  # filter( type != 'pred.lm') %>%
-  # filter( dep %in% c('mFARS','FARS.E') ) %>%
   ggplot( )+
   geom_density(alpha = .50)+
-  # geom_histogram(alpha = .5, position = position_identity(), binwidth = 20)+
-  # aes (linetype = score.ind)+
   aes (x = value)+
   aes (fill = type)+scale_fill_manual(values = c('#111111', '#f03b20', '#ffffff'), labels = c('measured','linear model','polynom. model'))+ #, labels = bquote( c('FARS E', SARA^ax, ICARS^ax )))+
   xlab('Percentualized Score')+
-  # coord_cartesian(xlim = c(0,100))+
-  # geom_vline(data = median, aes(xintercept = m), aes(color = dep))+
+  ylab('Density')+
   ggpubr::theme_pubclean()+
-  # facet_grid( paste(score.dep, 'from', score.ind, sep=' ')~score.type.dep, scale = 'free_x' )+
-  facet_wrap( ~paste(score.dep, 'from', score.ind, sep=' ') , scale = 'free_x' )+
+  # facet_wrap( ~paste(score.dep, 'from', score.ind, sep=' ') , scale = 'free_x' )+
+  facet_wrap( ~paste(score.dep, 'from', score.ind, sep=' '))+coord_cartesian(xlim = c(-2, 90))+
   theme(legend.title = element_blank())
 # .leg_lr+
 
