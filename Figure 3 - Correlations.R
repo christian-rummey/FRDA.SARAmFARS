@@ -46,7 +46,8 @@ my.cor.facet <- function(ds, x.par, x.max, y.par, y.max) {
     geom_smooth( formula = y ~ poly(x, 2), method = 'lm', color = 'blue')+
     geom_smooth( method = lm, color = 'red')+
     stat_regline_equation(label.x = x.max*.03, label.y = y.max*.95, data = dt..pct)+
-    stat_cor             (label.x = x.max*.03, label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct, r.digits = 2)+
+    # stat_cor               (label.x = x.max*.03, label.y = y.max*.90, aes(label = paste(..rr.label..)), data = dt..pct, r.digits = 2)+
+    ggpmisc::stat_correlation(label.x = .07, label.y = .88, aes(label = paste(..rr.label..)), data = dt..pct)+
     # geom_smooth(method = lm, color = 'green', linetype = 'dashed', data = dt..pct)+
     # stat_regline_equation(label.y = y.max*.80, data = dt..first)+
     # stat_cor(label.y = y.max*.75, aes(label = paste(..rr.label..)), data = dt..first)+
@@ -74,9 +75,9 @@ B <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'FARS.BC'  , 52 ) + xlab('SARA, appen
 C <- dt. %>% my.cor.facet('SARA.ki' ,  16, 'ICARS.ki' , 52 ) + xlab('SARA, appendicular') + ylab('ICARS, appendicular')
 
 p <- ggarrange(A, B, C, D, E, F, G, H, I, labels = c('A','B','C','D', 'E', 'F', 'G', 'H', 'I'), ncol = 3, nrow = 3)
-p
+# p
 
-# ggsave('Figure 3 - Correlations.png', plot = p, height = 13.5*.9, width = 13.5*.9)
+# ggsave('Figure 2 - Correlations.png', plot = p, height = 13.5*.9, width = 13.5*.9, dpi = 520)
 
 # . -----------------------------------------------------------------------
 
